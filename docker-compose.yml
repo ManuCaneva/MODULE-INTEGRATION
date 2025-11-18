@@ -1,5 +1,7 @@
 services:
-  # SERVICIO 1: KEYCLOAK
+  # ==============================================================================
+  # 1. KEYCLOAK
+  # ==============================================================================
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.6
     container_name: keycloak_server
@@ -20,7 +22,9 @@ services:
     networks:
       - app-network
 
-  # SERVICIO 2: API GATEWAY
+  # ==============================================================================
+  # 2. API GATEWAY
+  # ==============================================================================
   gateway:
     build: ./api-gateway
     container_name: gateway_nginx
@@ -31,8 +35,11 @@ services:
     depends_on:
       - logistica-api
       - stock-api
+      - compras-api
 
-  # SERVICIO 3: LOGISTICA API
+  # ==============================================================================
+  # 3. LOGÍSTICA API (Grupo 06)
+  # ==============================================================================
   logistica-api:
     build: ./api-logistica 
     container_name: logistica_api
@@ -69,12 +76,15 @@ services:
     networks:
       - app-network
 
-  # SERVICIO 4: STOCK API
+  # ==============================================================================
+  # 4. STOCK API (Grupo 08)
+  # ==============================================================================
   stock-api:
     build: 
       context: ./api-stock/backend 
       dockerfile: Dockerfile
     container_name: stock_backend
+    # Comando "a prueba de balas"
     command: /bin/sh -c "npm run migration:run || true; npm run seed || true; node dist/main"
     environment:
       - DB_HOST=stock-db
@@ -111,6 +121,55 @@ services:
       timeout: 5s
       retries: 5
 
+  # ==============================================================================
+  # 5. COMPRAS API (Grupo 10)
+  # ==============================================================================
+  compras-api:
+    build: ./api-compras
+    container_name: compras-backend
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=compras-db;Database=dbcomprasapi;User=compras_user;Password=compras_password
+      - Keycloak__Authority=http://keycloak:8080/realms/ds-2025-realm
+      - Keycloak__AdminBaseUrl=http://keycloak:8080
+      
+      - Keycloak__Audience=grupo-10
+      - Keycloak__ClientId=grupo-10
+      - Keycloak__ClientSecret=66ff9787-4fa5-46b3-b546-4ccbe604d233
+      - Keycloak__RequireHttpsMetadata=false
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80 # Escucha en el puerto 80 interno
+    ports:
+      - "5001:80" # Exponemos en 5001 para no chocar con Logística (5002)
+    depends_on:
+      compras-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - app-network
+
+  compras-db:
+    image: mysql:8.0
+    container_name: compras-database
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: dbcomprasapi
+      MYSQL_USER: compras_user
+      MYSQL_PASSWORD: compras_password
+    command: 
+      - --lower-case-table-names=1
+    ports:
+      - "3307:3306"
+    volumes:
+      - compras_db_data:/var/lib/mysql
+      - ./api-compras/Database/init-new.sql:/docker-entrypoint-initdb.d/init-new.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
 networks:
   app-network:
     driver: bridge
@@ -118,3 +177,4 @@ networks:
 volumes:
   stock_db_data:
   logistica_db_data:
+  compras_db_data:
