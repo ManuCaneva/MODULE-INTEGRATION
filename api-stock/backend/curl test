@@ -1,0 +1,14 @@
+# Productos
+
+## Crear producto
+curl -X POST http://localhost:3000/api/productos -H "Content-Type: application/json" -d "{\"nombre\":\"Laptop Gaming\",\"descripcion\":\"Laptop para gaming de alto rendimiento\",\"precio\":1500.99,\"stockInicial\":50,\"pesoKg\":2.5,\"categoriaIds\":[1]}"
+
+## Eliminar producto
+curl -X DELETE http://localhost:3000/api/productos/3
+
+
+# Reservas
+
+## Crear reserva
+curl -X POST http://localhost:3000/api/reservas/reservar -H "Content-Type: application/json" -d "{\"idCompra\":\"COMPRA-123\",\"productos\":[{\"idProducto\":5,\"cantidad\":10}]}"
+

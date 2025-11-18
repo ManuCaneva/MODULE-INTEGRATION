@@ -1,0 +1,11 @@
+# Ignorar la carpeta .vs de Visual Studio
+.vs/
+
+# Archivos binarios y compilados
+bin/
+obj/
+
+# Archivos de usuario
+*.user
+*.suo
+*.cache

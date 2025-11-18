@@ -1,0 +1,6 @@
+@ApiDePapas_HostAddress = http://localhost:5001
+
+GET {{ApiDePapas_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,16 @@
+bin/
+obj/
+*.user
+*.vs
+.vscode/*
+!.vscode/settings.json
+*.db
+*.suo
+
+# Node / SvelteKit frontend
+frontend-dashboard/node_modules/
+frontend-dashboard/.svelte-kit/
+frontend-dashboard/build/
+frontend-dashboard/.env
+frontend-dashboard/.env.*
+!frontend-dashboard/.env.example

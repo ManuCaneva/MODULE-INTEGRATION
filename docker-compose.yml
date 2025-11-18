@@ -1,0 +1,120 @@
+services:
+  # SERVICIO 1: KEYCLOAK
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.6
+    container_name: keycloak_server
+    command: start-dev --import-realm
+    environment:
+      KC_HOSTNAME: keycloak
+      KC_HOSTNAME_PORT: 8080
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HEALTH_ENABLED: true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realm-config:/opt/keycloak/data/import
+    networks:
+      - app-network
+
+  # SERVICIO 2: API GATEWAY
+  gateway:
+    build: ./api-gateway
+    container_name: gateway_nginx
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    depends_on:
+      - logistica-api
+      - stock-api
+
+  # SERVICIO 3: LOGISTICA API
+  logistica-api:
+    build: ./api-logistica 
+    container_name: logistica_api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=server=logistica-db;port=3306;database=apidepapas;user=ApiUser;password=ApiDePapas_G6_Logistica;ConvertZeroDateTime=True;AllowLoadLocalInfile=true
+      - Authentication__Keycloak__Authority=http://keycloak:8080/realms/ds-2025-realm
+      - Authentication__Keycloak__Audience=grupo-06
+      - StockApi__BaseUrl=http://gateway:80/stock/productos/
+      - DB_HOST=logistica-db 
+    ports:
+      - "5002:8080"
+    networks:
+      - app-network
+    depends_on:
+      - logistica-db
+      - keycloak
+    links:
+      - logistica-db:db
+    volumes:
+      - ./api-logistica/docs/csvs:/app/csvs
+
+  logistica-db:
+    image: mysql:8.0
+    container_name: logistica_db
+    command: --local-infile=1
+    environment:
+      MYSQL_DATABASE: apidepapas
+      MYSQL_USER: ApiUser
+      MYSQL_PASSWORD: ApiDePapas_G6_Logistica
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - logistica_db_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  # SERVICIO 4: STOCK API
+  stock-api:
+    build: 
+      context: ./api-stock/backend 
+      dockerfile: Dockerfile
+    container_name: stock_backend
+    command: /bin/sh -c "npm run migration:run || true; npm run seed || true; node dist/main"
+    environment:
+      - DB_HOST=stock-db
+      - DB_PORT=5432
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - DB_NAME=stock_db
+      - KEYCLOAK_ISSUER_URL=http://keycloak:8080/realms/ds-2025-realm
+      - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/certs
+      - KEYCLOAK_CLIENT_ID=grupo-08
+      - KEYCLOAK_CLIENT_SECRET=248f42b5-7007-47d1-a94e-e8941f352f6f
+    networks:
+      - app-network
+    depends_on:
+      keycloak:
+        condition: service_started
+      stock-db:
+        condition: service_healthy
+
+  stock-db:
+    image: postgres:15-alpine
+    container_name: stock_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stock_db
+    volumes:
+      - stock_db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d stock_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  stock_db_data:
+  logistica_db_data:

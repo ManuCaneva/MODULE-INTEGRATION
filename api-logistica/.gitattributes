@@ -1,0 +1,2 @@
+docs/csvs/*.csv text eol=lf
+entrypoint.sh text eol=lf

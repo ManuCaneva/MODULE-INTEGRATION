@@ -1,0 +1,80 @@
+# ⚠️ La línea 'version' fue eliminada para quitar la advertencia
+services:
+  # --- 1. Base de datos de la Aplicación ---
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stock_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - stock-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d stock_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- 4. Backend (Inicia DESPUÉS de Keycloak y su DB) ---
+  backend:
+    build:
+      context: ./backend
+    container_name: stock_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: user
+      DB_PASSWORD: password
+      DB_NAME: stock_db
+      KEYCLOAK_ISSUER_URL: http://localhost:8081/realms/ds-2025-realm
+      KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/certs
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - stock-network
+
+  # --- 5. Frontend (Inicia DESPUÉS de Keycloak y Backend) ---
+  frontend:
+    build:
+      context: ./frontend
+    container_name: stock_frontend
+    restart: always
+    ports:
+      - "8080:3000"
+    environment:
+      NEXTAUTH_URL: http://localhost:8080
+      # ⚠️ Mueve estos secretos a un archivo .env
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      # URLs internas correctas (usan nombres de servicio)
+      KEYCLOAK_ISSUER: http://keycloak:8080/realms/ds-2025-realm
+      KEYCLOAK_WELL_KNOWN_URL: http://keycloak:8080/realms/ds-2025-realm/.well-known/openid-configuration
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - stock-network
+    depends_on:
+      - backend
+      - keycloak
+
+volumes:
+  postgres-data:
+  keycloak_postgres_data:
+
+networks:
+  stock-network:
+    driver: bridge
