@@ -129,7 +129,8 @@ namespace ComprasAPI.Controllers
                 {
                     DeliveryAddress = new Address
                     {
-                        Street = "Av. Siempre Viva 123",
+                        Street = "Av. Siempre Viva",
+                        Number = 123,
                         City = "Resistencia",
                         State = "Chaco",
                         PostalCode = "H3500ABC",

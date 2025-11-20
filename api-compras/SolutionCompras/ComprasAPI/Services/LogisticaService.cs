@@ -25,7 +25,7 @@ namespace ComprasAPI.Services
                 var json = JsonSerializer.Serialize(request);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync("/shipping/cost", content);
+                var response = await _httpClient.PostAsync("shipping/cost", content);
                 response.EnsureSuccessStatusCode();
 
                 var responseContent = await response.Content.ReadAsStringAsync();
