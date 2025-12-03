@@ -1,46 +1,45 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../services/auth';
-import { Observable, from, switchMap ,throwError} from 'rxjs';
-import { take, tap, catchError, finalize } from 'rxjs/operators'; // 👈 IMPORTAR OPERADORES
+import { Observable, throwError } from 'rxjs';
+import { tap, catchError, finalize } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private authService = inject(AuthService); // 💉 Inyectar AuthService aquí
+  private authService = inject(AuthService);
   // private apiUrl = 'https://localhost:7248/api'; // Tu backend .NET original
   private apiUrl = 'http://localhost:5001/api'; // Backend en Docker
 
 
-  // Método para hacer requests autenticados
+  // Método para hacer requests autenticados de manera SÍNCRONA con el token
   private authenticatedRequest<T>(url: string, method: string = 'GET', data?: any): Observable<T> {
-    return from(this.authService.getToken()).pipe(
-      switchMap(token => {
-        const options = {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        };
+    // Obtenemos el token directamente (es un string, no una promesa ni observable)
+    const token = this.authService.getToken();
+    
+    const options = {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
 
-        const fullUrl = `${this.apiUrl}${url}`;
+    const fullUrl = `${this.apiUrl}${url}`;
 
-        switch (method.toUpperCase()) {
-          case 'GET':
-            return this.http.get<T>(fullUrl, options);
-          case 'POST':
-            return this.http.post<T>(fullUrl, data, options);
-          case 'PUT':
-            return this.http.put<T>(fullUrl, data, options);
-          case 'DELETE':
-            return this.http.delete<T>(fullUrl, options);
-          default:
-            return this.http.get<T>(fullUrl, options);
-        }
-      })
-    );
+    switch (method.toUpperCase()) {
+      case 'GET':
+        return this.http.get<T>(fullUrl, options);
+      case 'POST':
+        return this.http.post<T>(fullUrl, data, options);
+      case 'PUT':
+        return this.http.put<T>(fullUrl, data, options);
+      case 'DELETE':
+        return this.http.delete<T>(fullUrl, options);
+      default:
+        return this.http.get<T>(fullUrl, options);
+    }
   }
 
   // ========== PRODUCTOS ==========
@@ -57,38 +56,27 @@ export class ApiService {
     return this.authenticatedRequest('/shopcart');
   }
 
-  /*addToCart(productId: number, quantity: number): Observable<any> {
-    return this.authenticatedRequest('/shopcart', 'POST', {
-      productId,
-      quantity
-    });
-  }*/
-
   addToCart(productId: number, quantity: number): Observable<any> {
-  console.log('🚀 API SERVICE - Iniciando addToCart');
-  
-    return from(this.authService.getToken()).pipe(
-      take(1), // 👈 AÑADIR ESTO - toma solo un valor
-      switchMap(token => {
-        console.log('🔑 API SERVICE - Token obtenido, haciendo request');
-        
-        const options = {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        };
+    console.log('🚀 API SERVICE - Iniciando addToCart');
+    
+    const token = this.authService.getToken();
+    console.log('🔑 API SERVICE - Token obtenido');
+    
+    const options = {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
 
-        const fullUrl = `${this.apiUrl}/shopcart`;
-        console.log('📡 API SERVICE - URL:', fullUrl);
+    const fullUrl = `${this.apiUrl}/shopcart`;
+    console.log('📡 API SERVICE - URL:', fullUrl);
 
-        return this.http.post(fullUrl, { productId, quantity }, options).pipe(
-          tap(response => console.log('✅ API SERVICE - Response recibida')),
-          catchError(error => {
-            console.error('❌ API SERVICE - Error:', error);
-            return throwError(() => error);
-          })
-        );
+    return this.http.post(fullUrl, { productId, quantity }, options).pipe(
+      tap(response => console.log('✅ API SERVICE - Response recibida')),
+      catchError(error => {
+        console.error('❌ API SERVICE - Error:', error);
+        return throwError(() => error);
       }),
       finalize(() => console.log('🏁 API SERVICE - addToCart finalizado'))
     );
@@ -113,28 +101,22 @@ export class ApiService {
   createOrder(orderData: any): Observable<any> {
     console.log('🚀 API SERVICE - Creando orden:', orderData);
     
-    return from(this.authService.getToken()).pipe(
-      take(1),
-      switchMap(token => {
-        console.log('🔑 API SERVICE - Token obtenido, creando orden');
-        
-        const options = {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        };
+    const token = this.authService.getToken();
+    
+    const options = {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
 
-        const fullUrl = `${this.apiUrl}/shopcart/checkout`;
-        console.log('📡 API SERVICE - URL:', fullUrl);
-
-        return this.http.post(fullUrl, orderData, options).pipe(
-          tap(response => console.log('✅ API SERVICE - Orden creada:', response)),
-          catchError(error => {
-            console.error('❌ API SERVICE - Error creando orden:', error);
-            return throwError(() => error);
-          })
-        );
+    const fullUrl = `${this.apiUrl}/shopcart/checkout`;
+    
+    return this.http.post(fullUrl, orderData, options).pipe(
+      tap(response => console.log('✅ API SERVICE - Orden creada:', response)),
+      catchError(error => {
+        console.error('❌ API SERVICE - Error creando orden:', error);
+        return throwError(() => error);
       }),
       finalize(() => console.log('🏁 API SERVICE - createOrder finalizado'))
     );
