@@ -15,41 +15,13 @@ namespace ComprasAPI.Services
         private string _cachedToken;
         private DateTime _tokenExpiry;
 
+        private const string BASE_URL = "http://gateway:80/stock";  //  <<<<<<<<<<<<<  CAMBIO REALIZADO
+
         public StockService(HttpClient httpClient, ILogger<StockService> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
         }
-
-        /*
-        public async Task<bool> CancelarReservaAsync(int idReserva, int usuarioId)
-        {
-            try
-            {
-                _logger.LogInformation($"Cancelando reserva {idReserva}...");
-                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Delete, $"/reservas/{idReserva}");
-                var response = await _httpClient.SendAsync(httpRequest);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation($"✅ Reserva {idReserva} cancelada exitosamente");
-                    return true;
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"❌ Error cancelando reserva {idReserva}: {response.StatusCode} - {errorContent}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"💥 Error cancelando reserva {idReserva}");
-                return false;
-            }
-        }
-
-        */
 
         public async Task<bool> CancelarReservaAsync(int idReserva, string motivo = "Rollback por falla en checkout")
         {
@@ -57,10 +29,9 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation($"Cancelando reserva {idReserva}...");
 
-                // ✅ SOLUCIÓN: Agregar el campo "motivo" que requiere Stock API
                 var cancelRequest = new { motivo = motivo };
 
-                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Delete, $"/reservas/{idReserva}", cancelRequest);
+                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Delete, $"{BASE_URL}/reservas/{idReserva}", cancelRequest);
                 var response = await _httpClient.SendAsync(httpRequest);
 
                 if (response.IsSuccessStatusCode)
@@ -88,10 +59,7 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation("🔄 Creando reserva en Stock API...");
 
-                // CORRECCIÓN: Usar Productos (no Items)
-                _logger.LogInformation($"Reserva para usuario {reserva.UsuarioId} con {reserva.Productos?.Count} productos");
-
-                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Post, "/reservas", reserva);
+                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Post, $"{BASE_URL}/reservas", reserva);
                 var response = await _httpClient.SendAsync(httpRequest);
 
                 if (response.IsSuccessStatusCode)
@@ -104,7 +72,6 @@ namespace ComprasAPI.Services
                         PropertyNameCaseInsensitive = true
                     });
 
-                    // CORRECCIÓN: Usar IdReserva (no ReservaId)
                     _logger.LogInformation($"✅ Reserva creada exitosamente: {reservaOutput.IdReserva}");
                     return reservaOutput;
                 }
@@ -128,7 +95,7 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation($"Obteniendo producto {productoId} desde Stock API...");
 
-                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Get, $"/productos/{productoId}");
+                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Get, $"{BASE_URL}/productos/{productoId}");
                 var response = await _httpClient.SendAsync(httpRequest);
 
                 if (response.IsSuccessStatusCode)
@@ -139,7 +106,6 @@ namespace ComprasAPI.Services
                         PropertyNameCaseInsensitive = true
                     });
 
-                    // CORRECCIÓN: Usar StockDisponible (no Stock)
                     _logger.LogInformation($"Producto {productoId} obtenido: {producto.Nombre} - Stock: {producto.StockDisponible}");
                     return producto;
                 }
@@ -156,10 +122,9 @@ namespace ComprasAPI.Services
             }
         }
 
-        private async Task<HttpRequestMessage> CreateAuthenticatedRequest(HttpMethod method, string endpoint, object content = null)
+        private async Task<HttpRequestMessage> CreateAuthenticatedRequest(HttpMethod method, string url, object content = null)
         {
             var token = await GetAccessTokenAsync();
-            var url = $"http://localhost:3000{endpoint}";
 
             var request = new HttpRequestMessage(method, url);
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -183,7 +148,7 @@ namespace ComprasAPI.Services
                 _logger.LogInformation("🔍 Obteniendo productos desde Stock API...");
 
                 var token = await GetAccessTokenAsync();
-                var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:3000/productos");
+                var request = new HttpRequestMessage(HttpMethod.Get, $"{BASE_URL}/productos");
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
                 var response = await _httpClient.SendAsync(request);
@@ -198,7 +163,6 @@ namespace ComprasAPI.Services
                 var content = await response.Content.ReadAsStringAsync();
                 _logger.LogInformation($"📦 Respuesta recibida, longitud: {content.Length} caracteres");
 
-                // La API de Stock devuelve { "data": [ ...productos... ] }
                 var responseWrapper = JsonSerializer.Deserialize<StockApiResponse>(content, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -232,7 +196,6 @@ namespace ComprasAPI.Services
             }
         }
 
-        // También actualiza el método GetProductByIdAsync
         public async Task<ProductoStock> GetProductByIdAsync(int id)
         {
             try
@@ -240,7 +203,7 @@ namespace ComprasAPI.Services
                 _logger.LogInformation($"Obteniendo producto {id} desde Stock API...");
 
                 var token = await GetAccessTokenAsync();
-                var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:3000/productos/{id}");
+                var request = new HttpRequestMessage(HttpMethod.Get, $"{BASE_URL}/productos/{id}");
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
                 var response = await _httpClient.SendAsync(request);
@@ -257,19 +220,10 @@ namespace ComprasAPI.Services
 
                 var content = await response.Content.ReadAsStringAsync();
 
-                // Para producto individual, probablemente devuelva el objeto directo
                 return JsonSerializer.Deserialize<ProductoStock>(content, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
-            }
-            catch (HttpRequestException)
-            {
-                throw;
-            }
-            catch (JsonException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
@@ -279,9 +233,6 @@ namespace ComprasAPI.Services
             }
         }
 
-
-
-        // Agrega esta clase para manejar la respuesta de Stock API
         public class StockApiResponse
         {
             [JsonPropertyName("data")]
@@ -293,10 +244,8 @@ namespace ComprasAPI.Services
             throw new NotImplementedException();
         }
 
-        // MÉTODO PARA OBTENER TOKEN DE KEYCLOAK
         private async Task<string> GetAccessTokenAsync()
         {
-            // Verificar si el token está en caché y es válido
             if (!string.IsNullOrEmpty(_cachedToken) && DateTime.UtcNow < _tokenExpiry)
             {
                 return _cachedToken;
@@ -306,7 +255,7 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation("Obteniendo token de Keycloak...");
 
-                var tokenEndpoint = "https://keycloak.cubells.com.ar/realms/ds-2025-realm/protocol/openid-connect/token";
+                var tokenEndpoint = "http://host.docker.internal:8080/realms/ds-2025-realm/protocol/openid-connect/token";
                 var clientId = "grupo-08";
                 var clientSecret = "248f42b5-7007-47d1-a94e-e8941f352f6f";
 
@@ -319,7 +268,6 @@ namespace ComprasAPI.Services
 
                 var content = new FormUrlEncodedContent(tokenRequest);
 
-                // Usar una instancia temporal de HttpClient para evitar conflictos
                 using var httpClient = new HttpClient();
                 var response = await httpClient.PostAsync(tokenEndpoint, content);
 
@@ -333,7 +281,7 @@ namespace ComprasAPI.Services
 
                 var tokenResponse = await response.Content.ReadFromJsonAsync<KeycloakTokenResponse>();
                 _cachedToken = tokenResponse.AccessToken;
-                _tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn - 60); // Restar 60 segundos de margen
+                _tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn - 60);
 
                 _logger.LogInformation("Token de Keycloak obtenido exitosamente");
                 return _cachedToken;
@@ -345,7 +293,6 @@ namespace ComprasAPI.Services
             }
         }
 
-        // MÉTODO CON DATOS DE PRUEBA
         private List<ProductoStock> GetProductosDePrueba()
         {
             return new List<ProductoStock>
@@ -399,7 +346,6 @@ namespace ComprasAPI.Services
         }
     }
 
-    // Model para la respuesta del token
     public class KeycloakTokenResponse
     {
         [JsonPropertyName("access_token")]
