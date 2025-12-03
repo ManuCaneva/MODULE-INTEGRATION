@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.OpenApi.Models;
 // Ya no necesitamos 'MySqlConnector' aquí
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,7 +21,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // Base de datos
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
-        mySqlOptions => mySqlOptions.MigrationsAssembly("ApiDePapas.Infrastructure")));
+        mySqlOptions => 
+        {
+            mySqlOptions.MigrationsAssembly("ApiDePapas.Infrastructure");
+            mySqlOptions.EnableStringComparisonTranslations();
+        }));
 
 // Para habilitar Swagger / OpenAPI (documentación interactiva)
 builder.Services
@@ -105,7 +110,8 @@ builder.Services.AddAuthorization();
 // --- JWT AUTHENTICATION CONFIGURATION END ---
 
 //Registro de servicios
-//builder.Services.AddHttpClient<IStockService, StockService>();
+
+//builder.Services.AddScoped<IStockService, FakeStockService>();
 builder.Services.AddHttpClient<IPurchasingService, PurchasingService>();
 builder.Services.AddScoped<IShippingRepository, ShippingRepository>();
 builder.Services.AddScoped<ICalculateCost, CalculateCost>();
@@ -129,7 +135,16 @@ await DatabaseInitializer.InitializeDatabaseAsync(app.Services);
 // Configurar pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+    app.UseSwagger(c =>
+    {
+    c.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
+    {
+        swaggerDoc.Servers = new List<OpenApiServer> 
+        { 
+            new OpenApiServer { Url = "/logistica" } 
+        };
+    });
+    });
     app.UseSwaggerUI();
 }
 app.UseCors("AllowFrontend");
