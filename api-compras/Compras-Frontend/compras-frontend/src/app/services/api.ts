@@ -9,9 +9,10 @@ import { take, tap, catchError, finalize } from 'rxjs/operators'; // 👈 IMPORT
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
-  
-  private apiUrl = 'https://localhost:7248/api'; // Tu backend .NET
+  private authService = inject(AuthService); // 💉 Inyectar AuthService aquí
+  // private apiUrl = 'https://localhost:7248/api'; // Tu backend .NET original
+  private apiUrl = 'http://localhost:5001/api'; // Backend en Docker
+
 
   // Método para hacer requests autenticados
   private authenticatedRequest<T>(url: string, method: string = 'GET', data?: any): Observable<T> {

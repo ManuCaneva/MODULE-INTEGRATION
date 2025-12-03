@@ -14,7 +14,8 @@ export interface RegisterRequest {
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private apiUrl = 'https://localhost:7248/api/auth/register'; // 🔧 Ajustá el puerto de tu API
+  // private apiUrl = 'https://localhost:7248/api/auth/register'; // 🔧 Ajustá el puerto de tu API
+  private apiUrl = 'http://localhost:5001/api/auth/register';
   private clientSecret = '66ff9787-4fa5-46b3-b546-4ccbe604d233';
 
  

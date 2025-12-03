@@ -7,7 +7,7 @@ services:
     container_name: keycloak_server
     command: start-dev --import-realm
     environment:
-      KC_HOSTNAME: keycloak
+      KC_HOSTNAME: localhost
       KC_HOSTNAME_PORT: 8080
       KC_HTTP_ENABLED: true
       KC_HOSTNAME_STRICT: false
@@ -147,6 +147,18 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+    networks:
+      - app-network
+
+  compras-frontend:
+    build:
+      context: ./api-compras/Compras-Frontend/compras-frontend
+    container_name: compras_frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - compras-api
+      - keycloak
     networks:
       - app-network
 
