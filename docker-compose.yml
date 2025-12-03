@@ -95,6 +95,8 @@ services:
       - KEYCLOAK_JWKS_URI=https://keycloak.cubells.com.ar/realms/ds-2025-realm/protocol/openid-connect/certs
       - KEYCLOAK_CLIENT_ID=grupo-08
       - KEYCLOAK_CLIENT_SECRET=248f42b5-7007-47d1-a94e-e8941f352f6f
+    ports:
+      - "5004:8080"
     networks:
       - app-network
     depends_on:
