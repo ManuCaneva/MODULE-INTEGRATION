@@ -133,18 +133,31 @@ var app = builder.Build();
 await DatabaseInitializer.InitializeDatabaseAsync(app.Services);
 
 // Configurar pipeline HTTP
+
+app.Use((context, next) =>
+{
+    // Pregunta: "¿Me mandó el Gateway algún prefijo?"
+    var prefix = context.Request.Headers["X-Forwarded-Prefix"].FirstOrDefault();
+    
+    // Si el Gateway nos dio un prefijo, ajustamos la base de la app
+    if (!string.IsNullOrEmpty(prefix))
+    {
+        context.Request.PathBase = prefix;
+    }
+    return next();
+});
+
+// Habilitamos el uso de headers proxy estándar (X-Forwarded-For, etc.)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.All
+});
+
+// --- FIN DEL BLOQUE ---
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger(c =>
-    {
-    c.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
-    {
-        swaggerDoc.Servers = new List<OpenApiServer> 
-        { 
-            new OpenApiServer { Url = "/logistica" } 
-        };
-    });
-    });
+    app.UseSwagger();
     app.UseSwaggerUI();
 }
 app.UseCors("AllowFrontend");

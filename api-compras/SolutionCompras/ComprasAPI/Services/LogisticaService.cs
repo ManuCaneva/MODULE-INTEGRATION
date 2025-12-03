@@ -19,9 +19,62 @@ namespace ComprasAPI.Services
             _configuration = configuration;
             _logger = logger;
 
-            // Configurar base URL para Logística API (localhost:5002)
-            _httpClient.BaseAddress = new Uri("http://localhost:5002/");
+            // --- CÓDIGO CORREGIDO ---
+            // 1. Intentamos leer la URL desde la configuración (appsettings o variable de entorno)
+            var baseUrl = _configuration["ExternalApis:Logistica:BaseUrl"];
+
+            // 2. Si por alguna razón está vacía, usamos un fallback seguro (opcional)
+            if (string.IsNullOrEmpty(baseUrl))
+            {
+                // Fallback para desarrollo local fuera de Docker
+                baseUrl = "http://localhost:5002/"; 
+            }
+
+            // 3. Asignamos la BaseAddress dinámica
+            _httpClient.BaseAddress = new Uri(baseUrl);
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+        }
+
+        // 1. Método nuevo para obtener el token
+        private async Task<string> ObtenerTokenKeycloakAsync()
+        {
+            try
+            {
+                // Leemos las credenciales desde tu appsettings -> ExternalApis -> Logistica
+                var tokenEndpoint = _configuration["ExternalApis:Logistica:TokenEndpoint"];
+                var clientId = _configuration["ExternalApis:Logistica:ClientId"];
+                var clientSecret = _configuration["ExternalApis:Logistica:ClientSecret"];
+
+                // Preparamos los datos para pedir el token (x-www-form-urlencoded)
+                var keycloakRequest = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
+                var collection = new List<KeyValuePair<string, string>>
+                {
+                    new("grant_type", "client_credentials"),
+                    new("client_id", clientId),
+                    new("client_secret", clientSecret)
+                };
+                keycloakRequest.Content = new FormUrlEncodedContent(collection);
+
+                // Usamos un cliente nuevo temporal para no ensuciar el principal que tiene BaseUrl definida
+                using var tokenClient = new HttpClient(); 
+                var response = await tokenClient.SendAsync(keycloakRequest);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(content);
+                    // Extraemos la propiedad "access_token"
+                    return doc.RootElement.GetProperty("access_token").GetString();
+                }
+                
+                _logger.LogError($"Fallo Keycloak: {response.StatusCode}");
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error conectando a Keycloak");
+                return string.Empty;
+            }
         }
 
         public async Task<ShippingCostResponse> CalcularCostoEnvioAsync(ShippingCostRequest request)
@@ -60,11 +113,23 @@ namespace ComprasAPI.Services
 
                 var json = JsonSerializer.Serialize(costoRequest, jsonOptions);
                 _logger.LogInformation($"🧮 JSON para cálculo: {json}");
-
-                // Crear request
-                var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/shipping/cost");
+                var token = await ObtenerTokenKeycloakAsync();
+        
+                // 2. Preparamos el request (SIN LA BARRA INICIAL que corregimos antes)
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post, "shipping/cost");
                 httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
+                // 3. ¡IMPORTANTE! Pegamos el token en el header
+                if (!string.IsNullOrEmpty(token))
+                {
+                    httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                }
+                else 
+                {
+                    _logger.LogWarning("⚠️ No se pudo obtener token, intentando request anónimo (probablemente fallará)...");
+                }
+
+                // 4. Enviamos
                 var response = await _httpClient.SendAsync(httpRequest);
 
                 if (response.IsSuccessStatusCode)
@@ -141,7 +206,7 @@ namespace ComprasAPI.Services
                 _logger.LogInformation($"📦 JSON para creación: {json}");
 
                 // ✅ LLAMADA REAL A LOGÍSTICA API
-                var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/shipping");
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post, "shipping");
                 httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.SendAsync(httpRequest);
@@ -280,7 +345,7 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation($"🔍 Obteniendo seguimiento para envío {shippingId}...");
 
-                var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"/shipping/{shippingId}");
+                var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"shipping/{shippingId}");
                 var response = await _httpClient.SendAsync(httpRequest);
 
                 if (response.IsSuccessStatusCode)
@@ -323,7 +388,7 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation("🚛 Obteniendo métodos de transporte...");
 
-                var httpRequest = new HttpRequestMessage(HttpMethod.Get, "/shipping/transport-methods");
+                var httpRequest = new HttpRequestMessage(HttpMethod.Get, "shipping/transport-methods");
                 var response = await _httpClient.SendAsync(httpRequest);
 
                 if (response.IsSuccessStatusCode)
