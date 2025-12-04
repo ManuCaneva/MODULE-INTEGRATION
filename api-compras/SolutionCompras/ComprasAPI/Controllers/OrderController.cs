@@ -32,9 +32,9 @@ namespace ComprasAPI.Controllers
             _logger = logger;
         }
 
-        
+        /*
 
-        //POST: api/shopcart/checkout
+         POST: api/shopcart/checkout
         [HttpPost("checkout")]
         [Authorize]
         public async Task<IActionResult> Checkout([FromBody] CheckoutRequest request)
@@ -177,7 +177,8 @@ namespace ComprasAPI.Controllers
         
         }
 
-        
+        */
+
         // GET: api/shopcart/transport-methods
         [HttpGet("transport-methods")]
         public async Task<IActionResult> GetTransportMethods()

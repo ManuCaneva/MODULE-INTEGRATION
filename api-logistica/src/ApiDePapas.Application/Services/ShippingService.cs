@@ -121,7 +121,7 @@ namespace ApiDePapas.Application.Services
             {
                 TransportType.road => 1,
                 TransportType.air  => 2001,
-                TransportType.rail => 3,
+                TransportType.rail => 3001,
                 TransportType.sea  => 1001,
             
             };

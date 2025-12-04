@@ -31,7 +31,7 @@ namespace ApiDePapas.Application.Services
         private readonly IDistanceService _distance;
 
         // Origen por defecto (por si Stock no nos manda warehouse_postal_code)
-        private const string DEFAULT_ORIGIN_CPA = "H3500";
+        private const string DEFAULT_ORIGIN_CPA = "B1708";
 
         public CalculateCost(IStockService stockService, IDistanceService distance)
         {
