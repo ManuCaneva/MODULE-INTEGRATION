@@ -31,10 +31,16 @@ namespace ComprasAPI.Controllers
             }
             catch (System.Net.Http.HttpRequestException ex)
             {
-                _logger.LogError(ex, " No se pudo conectar con Stock API");
+                _logger.LogError(ex, $" No se pudo conectar con Stock API: {ex.Message}");
+                
+                if (ex.Message.Contains("401") || ex.Message.Contains("403"))
+                {
+                     return StatusCode(401, new { error = "No autorizado en Stock API", code = "STOCK_AUTH_ERROR" });
+                }
+                
                 return StatusCode(502, new
                 {
-                    error = "Servicio Stock no disponible",
+                    error = $"Servicio Stock no disponible: {ex.Message}",
                     code = "STOCK_SERVICE_UNAVAILABLE"
                 });
             }

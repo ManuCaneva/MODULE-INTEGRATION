@@ -58,6 +58,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         var keycloakConfig = builder.Configuration.GetSection("Authentication:Keycloak");
         var authority = keycloakConfig["Authority"];
+        var validIssuer = keycloakConfig["ValidIssuer"];
         
         options.Authority = authority;
         options.RequireHttpsMetadata = false; // Solo para desarrollo local
@@ -65,7 +66,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateAudience = false, // Keycloak no siempre incluye audience in client_credentials
             ValidateIssuer = true,
-            ValidIssuer = authority,
+            ValidIssuer = !string.IsNullOrEmpty(validIssuer) ? validIssuer : authority,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(5)
             // NO usar RoleClaimType aquí, lo manejamos manualmente

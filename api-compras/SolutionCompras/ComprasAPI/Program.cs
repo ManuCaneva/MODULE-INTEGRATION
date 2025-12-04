@@ -16,9 +16,12 @@ builder.Configuration["Jwt:Audience"] = "ComprasUsuarios";
 //builder.Services.AddHttpClient();
 
 // ✅ 1. CONFIGURAR STOCK SERVICE
-builder.Services.AddHttpClient<IStockService, StockService>(client =>
+builder.Services.AddHttpClient<IStockService, StockService>((provider, client) =>
 {
-    client.BaseAddress = new Uri("http://localhost:3000/");
+    var config = provider.GetRequiredService<IConfiguration>();
+    var stockApiUrl = config["ExternalApis:Stock:BaseUrl"] ?? "http://localhost:3000/";
+    
+    client.BaseAddress = new Uri(stockApiUrl);
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
@@ -45,6 +48,7 @@ builder.Services
         var configuration = builder.Configuration;
 
         var authority = configuration["Keycloak:Authority"];
+        var validIssuer = configuration["Keycloak:ValidIssuer"];
         var audience = configuration["Keycloak:Audience"];
         var requireHttpsMetadata = configuration.GetValue<bool>("Keycloak:RequireHttpsMetadata");
 
@@ -59,7 +63,7 @@ builder.Services
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidAudience = audience,
-            ValidIssuer = authority,
+            ValidIssuer = !string.IsNullOrEmpty(validIssuer) ? validIssuer : authority,
             ClockSkew = TimeSpan.FromHours(3)
         };
 

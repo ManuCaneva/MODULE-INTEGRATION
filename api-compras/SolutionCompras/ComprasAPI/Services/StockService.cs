@@ -192,58 +192,20 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation("🔍 Obteniendo productos desde Stock API...");
 
-                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Get, ""); // Base URL already points to /stock/productos/ or similar?
-                // Wait, the configured URL is http://gateway:80/stock/productos/
-                // So if we want ALL products, we probably just request the base URL?
-                // Or is it BaseUrl + "productos"?
-                // The docker-compose says: ExternalApis__Stock__BaseUrl=http://gateway:80/stock/productos/
-                // The code used "http://localhost:3000/productos"
-                // So if BaseUrl is ".../productos/", then endpoint should be ""?
-                // But other methods use "productos/{id}".
-                // Let's assume BaseUrl is the root of the service (e.g. http://gateway:80/stock/)
-                // BUT the docker-compose value includes "productos/".
+                var token = await GetAccessTokenAsync();
                 
-                // Let's check appsettings again:
-                // "BaseUrl": "http://stock-api:3000/"
-                // Docker-compose: "http://gateway:80/stock/productos/"
+                var baseUrl = _configuration["ExternalApis:Stock:BaseUrl"];
+                if (string.IsNullOrEmpty(baseUrl)) baseUrl = "http://localhost:3000/";
+                if (!baseUrl.EndsWith("/")) baseUrl += "/";
                 
-                // If I use docker-compose value, I should be careful about appending "productos".
+                // The configured URL is http://gateway:80/stock/productos/
+                // So for "GetAll", we just use the base URL.
+                var url = baseUrl; 
                 
-                // Let's make it robust. If BaseUrl contains "productos", use it as is for GetAll.
-                // But GetById appends ID.
-                
-                // Better strategy: Assume BaseUrl is the "Service URL".
-                // But the injected value is specific.
-                
-                // Let's stick to what the code was doing: appending "productos" to localhost:3000.
-                // So if BaseUrl is "http://gateway:80/stock/productos/", appending "productos" makes "http://gateway:80/stock/productos/productos". That's wrong.
-                
-                // I will assume the configuration "ExternalApis:Stock:BaseUrl" points to the resource collection if it ends in "productos/".
-                // If I look at how it's used:
-                // CreateAuthenticatedRequest is used with "reservas" and "productos/{id}".
-                
-                // If I change logic to:
-                // BaseUrl = http://gateway:80/stock/ (Service Root)
-                // Then endpoint = "productos" works.
-                
-                // I will trust the Config to be the ROOT of the stock service.
-                // AND I will update the docker-compose environment variable to match that expectation.
-                // OR I will handle it here.
-                
-                // Let's simply use the configured URL.
-                 var token = await GetAccessTokenAsync();
-                 
-                 var baseUrl = _configuration["ExternalApis:Stock:BaseUrl"];
-                 // Quick fix: if baseurl ends in /productos/, remove it for the "service root" concept, OR just use it.
-                 
-                 // Let's try to be safe.
-                 // The original code did: http://localhost:3000/productos
-                 // The new config is: http://gateway:80/stock/productos/
-                 
-                 // So for GetAll, we just GET that URL.
-                 
-                 var request = new HttpRequestMessage(HttpMethod.Get, baseUrl);
-                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                _logger.LogInformation($"📡 Requesting URL: {url}");
+
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
                 var response = await _httpClient.SendAsync(request);
 
@@ -251,7 +213,7 @@ namespace ComprasAPI.Services
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError($"❌ Error HTTP: {response.StatusCode} - {errorContent}");
-                    throw new HttpRequestException($"Error: {response.StatusCode}");
+                    throw new HttpRequestException($"Error: {response.StatusCode} - {errorContent}");
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
@@ -270,6 +232,19 @@ namespace ComprasAPI.Services
                 }
                 else
                 {
+                    // Attempt to deserialize as direct list if wrapper fails or data is null
+                    try 
+                    {
+                        var directList = JsonSerializer.Deserialize<List<ProductoStock>>(content, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+                        if (directList != null) {
+                             _logger.LogInformation($"✅ Obtenidos {directList.Count} productos (Lista Directa) de Stock API");
+                             return directList;
+                        }
+                    } catch {}
+
                     _logger.LogWarning("❌ No se encontraron productos en la respuesta");
                     return new List<ProductoStock>();
                 }

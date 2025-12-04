@@ -47,6 +47,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=server=logistica-db;port=3306;database=apidepapas;user=ApiUser;password=ApiDePapas_G6_Logistica;ConvertZeroDateTime=True;AllowLoadLocalInfile=true
       - Authentication__Keycloak__Authority=http://keycloak:8080/realms/ds-2025-realm
+      - Authentication__Keycloak__ValidIssuer=http://localhost:8080/realms/ds-2025-realm
       - Authentication__Keycloak__Audience=grupo-06
       - StockApi__BaseUrl=http://gateway:80/stock/productos/
       - DB_HOST=logistica-db 
@@ -92,7 +93,7 @@ services:
       - DB_USERNAME=user
       - DB_PASSWORD=password
       - DB_NAME=stock_db
-      - KEYCLOAK_ISSUER_URL=http://keycloak:8080/realms/ds-2025-realm
+      - KEYCLOAK_ISSUER_URL=http://localhost:8080/realms/ds-2025-realm
       - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/certs
       - KEYCLOAK_CLIENT_ID=grupo-08
       - KEYCLOAK_CLIENT_SECRET=248f42b5-7007-47d1-a94e-e8941f352f6f
@@ -130,6 +131,7 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Server=compras-db;Database=dbcomprasapi;User=compras_user;Password=compras_password
       - Keycloak__Authority=http://keycloak:8080/realms/ds-2025-realm
+      - Keycloak__ValidIssuer=http://localhost:8080/realms/ds-2025-realm
       - Keycloak__AdminBaseUrl=http://keycloak:8080
       
       - Keycloak__Audience=grupo-10
