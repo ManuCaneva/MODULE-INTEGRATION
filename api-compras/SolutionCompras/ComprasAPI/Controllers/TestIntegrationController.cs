@@ -117,7 +117,58 @@ namespace ComprasAPI.Controllers
                 });
             }
         }
+        [HttpPost("logistica/calculate-shipping-dynamic")]
+        public async Task<IActionResult> CalculateShippingDynamic([FromBody] ShippingCostRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("🧮 Calculando envío con datos personalizados...");
 
+                // Validamos que el body no sea nulo
+                if (request == null || request.DeliveryAddress == null)
+                {
+                    return BadRequest("El cuerpo de la solicitud no es válido.");
+                }
+
+                var resultado = await _logisticaService.CalcularCostoEnvioAsync(request);
+
+                return Ok(new
+                {
+                    message = "Cálculo exitoso",
+                    input_recibido = request,
+                    resultado_logistica = resultado
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en endpoint dinámico de logística");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // 2. Endpoint para probar la conexión con Stock API (Obtener Productos)
+        [HttpGet("stock/products")]
+        public async Task<IActionResult> GetStockProducts()
+        {
+            try
+            {
+                _logger.LogInformation("📦 Solicitando lista de productos a Stock API...");
+
+                var productos = await _stockService.GetAllProductsAsync();
+
+                return Ok(new
+                {
+                    message = $"Se obtuvieron {productos.Count} productos desde Stock API",
+                    productos = productos
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error conectando con Stock API");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+      
         [HttpPost("logistica/calculate-shipping")]
         public async Task<IActionResult> TestCalculateShipping()
         {
