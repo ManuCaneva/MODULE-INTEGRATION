@@ -150,7 +150,6 @@ namespace ComprasAPI.Models.DTOs
         public string Status { get; set; }
         public string TransportType { get; set; }
         public string EstimatedDeliveryAt { get; set; }
-
         public decimal ShippingCost { get; set; }
     }
 
@@ -172,10 +171,19 @@ namespace ComprasAPI.Models.DTOs
     // 🟡 MANTENER ESTAS - Para direcciones genéricas (NO cambiar)
     public class Address
     {
+        [JsonPropertyName("street")] 
         public string Street { get; set; }
+        
+        [JsonPropertyName("city")] 
         public string City { get; set; }
+        
+        [JsonPropertyName("state")] 
         public string State { get; set; }
+        
+        [JsonPropertyName("postalCode")] 
         public string PostalCode { get; set; }
+        
+        [JsonPropertyName("country")] 
         public string Country { get; set; }
     }
 
@@ -217,7 +225,9 @@ namespace ComprasAPI.Models.DTOs
 
     public class CheckoutRequest
     {
+        [JsonPropertyName("deliveryAddress")]
         public Address DeliveryAddress { get; set; }
+        [JsonPropertyName("transportType")]
         public string TransportType { get; set; }
     }
 }

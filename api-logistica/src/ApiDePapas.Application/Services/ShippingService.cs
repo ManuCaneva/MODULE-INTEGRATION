@@ -54,7 +54,7 @@ namespace ApiDePapas.Application.Services
             );
             var cost = await _calculate_cost.CalculateShippingCostAsync(costReq);
 
-            // 🔽 NUEVO: los días estimados vienen de CalculateCost (máximo según tipo de transporte)
+            //  NUEVO: los días estimados vienen de CalculateCost (máximo según tipo de transporte)
             int estimated_days = CalculateCost.GetMaxEstimatedDays(req.transport_type);
 
             var locality = await _locality_repository.GetByCompositeKeyAsync(

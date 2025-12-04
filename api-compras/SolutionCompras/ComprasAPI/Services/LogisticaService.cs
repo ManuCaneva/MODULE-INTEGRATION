@@ -177,43 +177,54 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation("🚚 CREANDO ENVÍO EN LOGÍSTICA API...");
 
-                // [CORRECCIÓN] OBTENER TOKEN
+                var jsonContent = JsonSerializer.Serialize(request);
+                    
+                    // 2. Usar esa cadena JSON en el log
+                _logger.LogInformation("JSON de la Petición: {Json}", jsonContent);
+                
+                // OBTENER TOKEN
                 var token = await ObtenerTokenKeycloakAsync();
 
-                // ✅ Convertir CreateShippingRequest a estructura que espera Logística API
-                var envioRequest = new
+                // 1. Crear el DTO CreateShippingRequest (usando sus propiedades [JsonPropertyName])
+                var shippingRequestDto = new CreateShippingRequest
                 {
-                    order_id = request.OrderId,
-                    user_id = request.UserId,
-                    delivery_address = new
+                    OrderId = request.OrderId,
+                    UserId = request.UserId,
+                    DeliveryAddress = new DeliveryAddress
                     {
-                        street = request.DeliveryAddress.Street,
-                        number = request.DeliveryAddress.Number, // Ya viene en el request
-                        postal_code = request.DeliveryAddress.PostalCode,
-                        locality_name = request.DeliveryAddress.LocalityName // Usar LocalityName
+                        Street = request.DeliveryAddress.Street,
+                        Number = request.DeliveryAddress.Number,
+                        PostalCode = request.DeliveryAddress.PostalCode,
+                        LocalityName = request.DeliveryAddress.LocalityName
                     },
-                    transport_type = request.TransportType?.ToLower() ?? "road",
-                    products = request.Products?.Select(p => new
+                    TransportType = request.TransportType?.ToLower() ?? "road",
+                    Products = request.Products?.Select(p => new ShippingProduct
                     {
-                        id = p.Id, // IMPORTANTE: "id" para endpoint /shipping
-                        quantity = p.Quantity
+                        Id = p.Id,
+                        Quantity = p.Quantity
                     }).ToList()
+                };
+                
+                // 2. Aplicar el ShippingRequestWrapper (Contiene la clave "req")
+                var requestWrapper = new ShippingRequestWrapper
+                {
+                    Request = shippingRequestDto
                 };
 
                 var jsonOptions = new JsonSerializerOptions
                 {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    // Las propiedades ya tienen JsonPropertyName, no necesitamos CamelCase
                     WriteIndented = false
                 };
 
-                var json = JsonSerializer.Serialize(envioRequest, jsonOptions);
+                var json = JsonSerializer.Serialize(shippingRequestDto, jsonOptions);
                 _logger.LogInformation($"📦 JSON para creación: {json}");
 
-                // ✅ LLAMADA REAL A LOGÍSTICA API
+                // LLAMADA REAL A LOGÍSTICA API
                 var httpRequest = new HttpRequestMessage(HttpMethod.Post, "shipping");
                 httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // [CORRECCIÓN] APLICAR TOKEN
+                // APLICAR TOKEN
                 if (!string.IsNullOrEmpty(token))
                 {
                     httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -228,13 +239,11 @@ namespace ComprasAPI.Services
 
                     try
                     {
-                        // Deserializar respuesta de Logística API
                         var envioApiResponse = JsonSerializer.Deserialize<EnvioCreadoApiResponse>(responseContent, new JsonSerializerOptions
                         {
                             PropertyNameCaseInsensitive = true
                         });
 
-                        // Obtener costo para este envío (opcional)
                         decimal shippingCost = await ObtenerCostoEstimadoAsync(request);
 
                         return new CreateShippingResponse
@@ -250,7 +259,6 @@ namespace ComprasAPI.Services
                     {
                         _logger.LogWarning(jsonEx, "⚠️ Error deserializando respuesta real");
 
-                        // Si falla deserialización pero la llamada fue exitosa
                         return new CreateShippingResponse
                         {
                             ShippingId = 500000 + new Random().Next(100, 999),
@@ -266,7 +274,6 @@ namespace ComprasAPI.Services
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError($"❌ ERROR CREANDO ENVÍO: {response.StatusCode} - {errorContent}");
 
-                    // 🔥 FALLBACK SOLO SI FALLA
                     return GenerateFallbackResponse(request, errorContent);
                 }
             }

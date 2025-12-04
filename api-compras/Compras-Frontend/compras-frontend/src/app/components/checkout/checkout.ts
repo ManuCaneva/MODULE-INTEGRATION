@@ -49,21 +49,23 @@ export class CheckoutComponent implements OnInit {
   }
 
   async loadCartData() {
-    try {
-      this.loading = true;
-      const cart = this.cartService.getItems();
-      this.cartTotal = this.cartService.getCartTotal();
-      this.cartItemsCount = cart.length;
-      
-      if (cart.length === 0) {
-        this.errorMessage = 'Tu carrito está vacío. Agrega productos antes de continuar.';
+      try {
+        this.loading = true;
+        
+        // ✅ CORRECCIÓN CLAVE: Esperar a que el servicio cargue los datos del backend
+        const cart = await this.cartService.loadCartFromBackend(); 
+        
+        this.cartTotal = this.cartService.getCartTotal();
+        this.cartItemsCount = cart.length;
+        
+        // ... (resto de las validaciones)
+        
+      } catch (error) {
+        this.errorMessage = 'Error al cargar los datos del carrito desde el backend';
+        console.error('Error:', error);
+      } finally {
+        this.loading = false;
       }
-    } catch (error) {
-      this.errorMessage = 'Error al cargar los datos del carrito';
-      console.error('Error:', error);
-    } finally {
-      this.loading = false;
-    }
   }
 
   validateForm(): boolean {
@@ -145,6 +147,8 @@ export class CheckoutComponent implements OnInit {
 
         ${response.message || 'Tu pedido ha sido procesado exitosamente.'}
           `;
+
+          console.log(response);
           
           alert(successMessage);
           

@@ -6,6 +6,7 @@ using ComprasAPI.Models;
 using ComprasAPI.Models.DTOs;
 using ComprasAPI.Services;
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 
 namespace ComprasAPI.Controllers
@@ -318,7 +319,9 @@ namespace ComprasAPI.Controllers
     // DTOs para checkout
     public class CheckoutRequest
     {
+        [JsonPropertyName("deliveryAddress")]
         public Address DeliveryAddress { get; set; }
+        [JsonPropertyName("transportType")]
         public string TransportType { get; set; }
     }
 
