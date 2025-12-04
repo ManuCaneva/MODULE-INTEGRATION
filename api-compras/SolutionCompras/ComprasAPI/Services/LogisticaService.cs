@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Net.Http.Headers;
 
 namespace ComprasAPI.Services
 {
@@ -176,6 +177,9 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation("🚚 CREANDO ENVÍO EN LOGÍSTICA API...");
 
+                // [CORRECCIÓN] OBTENER TOKEN
+                var token = await ObtenerTokenKeycloakAsync();
+
                 // ✅ Convertir CreateShippingRequest a estructura que espera Logística API
                 var envioRequest = new
                 {
@@ -188,7 +192,7 @@ namespace ComprasAPI.Services
                         postal_code = request.DeliveryAddress.PostalCode,
                         locality_name = request.DeliveryAddress.LocalityName // Usar LocalityName
                     },
-                    transport_type = request.TransportType?.ToLower() ?? "truck",
+                    transport_type = request.TransportType?.ToLower() ?? "road",
                     products = request.Products?.Select(p => new
                     {
                         id = p.Id, // IMPORTANTE: "id" para endpoint /shipping
@@ -208,6 +212,12 @@ namespace ComprasAPI.Services
                 // ✅ LLAMADA REAL A LOGÍSTICA API
                 var httpRequest = new HttpRequestMessage(HttpMethod.Post, "shipping");
                 httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // [CORRECCIÓN] APLICAR TOKEN
+                if (!string.IsNullOrEmpty(token))
+                {
+                    httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
 
                 var response = await _httpClient.SendAsync(httpRequest);
 

@@ -29,13 +29,13 @@ export class CheckoutComponent implements OnInit {
     country: 'AR' // Siempre Argentina por defecto
   };
 
-  transportType: string = 'truck'; // Valor por defecto
+  transportType: string = 'road'; // Valor por defecto
 
   // Opciones para el select de transporte
   transportOptions = [
-    { value: 'truck', label: '🚚 Camión' },
-    { value: 'boat', label: '🚢 Barco' },
-    { value: 'plane', label: '✈️ Avión' }
+    { value: 'road', label: '🚚 Camión' },
+    { value: 'sea', label: '🚢 Barco' },
+    { value: 'air', label: '✈️ Avión' }
   ];
 
   constructor(
