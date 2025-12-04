@@ -28,7 +28,7 @@ namespace ComprasAPI.Services
             if (string.IsNullOrEmpty(baseUrl))
             {
                 // Fallback para desarrollo local fuera de Docker
-                baseUrl = "http://localhost:5002/"; 
+                baseUrl = "http://localhost:5002/";
             }
 
             // 3. Asignamos la BaseAddress dinámica
@@ -57,7 +57,7 @@ namespace ComprasAPI.Services
                 keycloakRequest.Content = new FormUrlEncodedContent(collection);
 
                 // Usamos un cliente nuevo temporal para no ensuciar el principal que tiene BaseUrl definida
-                using var tokenClient = new HttpClient(); 
+                using var tokenClient = new HttpClient();
                 var response = await tokenClient.SendAsync(keycloakRequest);
 
                 if (response.IsSuccessStatusCode)
@@ -67,7 +67,7 @@ namespace ComprasAPI.Services
                     // Extraemos la propiedad "access_token"
                     return doc.RootElement.GetProperty("access_token").GetString();
                 }
-                
+
                 _logger.LogError($"Fallo Keycloak: {response.StatusCode}");
                 return string.Empty;
             }
@@ -115,7 +115,7 @@ namespace ComprasAPI.Services
                 var json = JsonSerializer.Serialize(costoRequest, jsonOptions);
                 _logger.LogInformation($"🧮 JSON para cálculo: {json}");
                 var token = await ObtenerTokenKeycloakAsync();
-        
+
                 // 2. Preparamos el request (SIN LA BARRA INICIAL que corregimos antes)
                 var httpRequest = new HttpRequestMessage(HttpMethod.Post, "shipping/cost");
                 httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -125,7 +125,7 @@ namespace ComprasAPI.Services
                 {
                     httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
                 }
-                else 
+                else
                 {
                     _logger.LogWarning("⚠️ No se pudo obtener token, intentando request anónimo (probablemente fallará)...");
                 }
@@ -178,33 +178,57 @@ namespace ComprasAPI.Services
                 _logger.LogInformation("🚚 CREANDO ENVÍO EN LOGÍSTICA API...");
 
                 var jsonContent = JsonSerializer.Serialize(request);
-                    
+
                     // 2. Usar esa cadena JSON en el log
                 _logger.LogInformation("JSON de la Petición: {Json}", jsonContent);
-                
+
                 // OBTENER TOKEN
                 var token = await ObtenerTokenKeycloakAsync();
 
                 // 1. Crear el DTO CreateShippingRequest (usando sus propiedades [JsonPropertyName])
-                var shippingRequestDto = new CreateShippingRequest
-                {
-                    OrderId = request.OrderId,
-                    UserId = request.UserId,
-                    DeliveryAddress = new DeliveryAddress
+                CreateShippingRequest shippingRequestDto;
+                    using (JsonDocument doc = JsonDocument.Parse(jsonContent))
                     {
-                        Street = request.DeliveryAddress.Street,
-                        Number = request.DeliveryAddress.Number,
-                        PostalCode = request.DeliveryAddress.PostalCode,
-                        LocalityName = request.DeliveryAddress.LocalityName
-                    },
-                    TransportType = request.TransportType?.ToLower() ?? "road",
-                    Products = request.Products?.Select(p => new ShippingProduct
-                    {
-                        Id = p.Id,
-                        Quantity = p.Quantity
-                    }).ToList()
-                };
-                
+                        var root = doc.RootElement;
+                            // Mapeo manual navegando por los nodos del JSON
+                            shippingRequestDto = new CreateShippingRequest
+                            {
+                                // Propiedades simples
+                                OrderId = root.GetProperty("order_id").GetInt32(),
+                                UserId = root.GetProperty("user_id").GetInt32(),
+
+                                // Lógica para TransportType con valor por defecto
+                                TransportType = root.TryGetProperty("transport_type", out var transType)
+                                                ? transType.GetString().ToLower()
+                                                : "road",
+
+                                // Mapeo de Objeto Anidado (DeliveryAddress)
+                                DeliveryAddress = new DeliveryAddress
+                                {
+                                    Street = root.GetProperty("delivery_address").GetProperty("street").GetString(),
+                                    Number = root.GetProperty("delivery_address").GetProperty("number").GetInt32(),
+                                    PostalCode = root.GetProperty("delivery_address").GetProperty("postal_code").GetString(),
+                                    LocalityName = root.GetProperty("delivery_address").GetProperty("locality_name").GetString()
+                                },
+
+                                // Mapeo de Array (Products)
+                                Products = new List<ShippingProduct>()
+                            };
+
+                            // Iteramos manualmente sobre el array JSON de productos
+                            if (root.TryGetProperty("products", out var productsArray) && productsArray.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var prodElement in productsArray.EnumerateArray())
+                                {
+                                    shippingRequestDto.Products.Add(new ShippingProduct
+                                    {
+                                        Id = prodElement.GetProperty("id").GetInt32(),
+                                        Quantity = prodElement.GetProperty("quantity").GetInt32()
+                                    });
+                                }
+                            }
+                        }
+
                 // 2. Aplicar el ShippingRequestWrapper (Contiene la clave "req")
                 var requestWrapper = new ShippingRequestWrapper
                 {
