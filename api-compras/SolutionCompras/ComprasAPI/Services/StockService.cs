@@ -11,18 +11,20 @@ namespace ComprasAPI.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<StockService> _logger;
-        private readonly IConfiguration _configuration;
+        // Eliminamos IConfiguration para simplificar y evitar errores de compilación por ahora
+        // private readonly IConfiguration _configuration;
 
         private string _cachedToken;
         private DateTime _tokenExpiry;
 
-        private const string BASE_URL = "http://gateway:80/stock";  //  <<<<<<<<<<<<<  CAMBIO REALIZADO
+        // Definimos la URL base como constante o variable de clase
+        // Usamos el nombre del servicio en Docker (stock-api) o el Gateway
+        private const string BASE_URL = "http://gateway:80/stock"; 
 
         public StockService(HttpClient httpClient, ILogger<StockService> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
-            _configuration = configuration;
         }
 
         public async Task<bool> CancelarReservaAsync(int idReserva, string motivo = "Rollback por falla en checkout")
@@ -61,6 +63,9 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation("🔄 Creando reserva en Stock API...");
 
+                // CORRECCIÓN: Usar Productos (no Items)
+                _logger.LogInformation($"Reserva para usuario {reserva.UsuarioId} con {reserva.Productos?.Count} productos");
+
                 var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Post, $"{BASE_URL}/reservas", reserva);
                 var response = await _httpClient.SendAsync(httpRequest);
 
@@ -74,6 +79,7 @@ namespace ComprasAPI.Services
                         PropertyNameCaseInsensitive = true
                     });
 
+                    // CORRECCIÓN: Usar IdReserva (no ReservaId)
                     _logger.LogInformation($"✅ Reserva creada exitosamente: {reservaOutput.IdReserva}");
                     return reservaOutput;
                 }
@@ -108,6 +114,7 @@ namespace ComprasAPI.Services
                         PropertyNameCaseInsensitive = true
                     });
 
+                    // CORRECCIÓN: Usar StockDisponible (no Stock)
                     _logger.LogInformation($"Producto {productoId} obtenido: {producto.Nombre} - Stock: {producto.StockDisponible}");
                     return producto;
                 }
@@ -127,7 +134,7 @@ namespace ComprasAPI.Services
         private async Task<HttpRequestMessage> CreateAuthenticatedRequest(HttpMethod method, string url, object content = null)
         {
             var token = await GetAccessTokenAsync();
-
+            
             var request = new HttpRequestMessage(method, url);
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
@@ -150,6 +157,7 @@ namespace ComprasAPI.Services
                 _logger.LogInformation("🔍 Obteniendo productos desde Stock API...");
 
                 var token = await GetAccessTokenAsync();
+                // Ajuste aquí: Usamos la URL del Gateway
                 var request = new HttpRequestMessage(HttpMethod.Get, $"{BASE_URL}/productos");
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
@@ -165,6 +173,7 @@ namespace ComprasAPI.Services
                 var content = await response.Content.ReadAsStringAsync();
                 _logger.LogInformation($"📦 Respuesta recibida, longitud: {content.Length} caracteres");
 
+                // La API de Stock devuelve { "data": [ ...productos... ] }
                 var responseWrapper = JsonSerializer.Deserialize<StockApiResponse>(content, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -198,15 +207,12 @@ namespace ComprasAPI.Services
             }
         }
 
+        // También actualiza el método GetProductByIdAsync
         public async Task<ProductoStock> GetProductByIdAsync(int id)
         {
             try
             {
                 _logger.LogInformation($"Obteniendo producto {id} desde Stock API...");
-
-                // Reuse CreateAuthenticatedRequest or manual logic?
-                // If BaseUrl is http://gateway:80/stock/productos/
-                // We want http://gateway:80/stock/productos/{id}
 
                 var token = await GetAccessTokenAsync();
                 var request = new HttpRequestMessage(HttpMethod.Get, $"{BASE_URL}/productos/{id}");
@@ -226,10 +232,19 @@ namespace ComprasAPI.Services
 
                 var content = await response.Content.ReadAsStringAsync();
 
+                // Para producto individual, probablemente devuelva el objeto directo
                 return JsonSerializer.Deserialize<ProductoStock>(content, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
+            }
+            catch (HttpRequestException)
+            {
+                throw;
+            }
+            catch (JsonException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -239,6 +254,9 @@ namespace ComprasAPI.Services
             }
         }
 
+
+
+        // Agrega esta clase para manejar la respuesta de Stock API
         public class StockApiResponse
         {
             [JsonPropertyName("data")]
@@ -250,8 +268,10 @@ namespace ComprasAPI.Services
             throw new NotImplementedException();
         }
 
+        // MÉTODO PARA OBTENER TOKEN DE KEYCLOAK
         private async Task<string> GetAccessTokenAsync()
         {
+            // Verificar si el token está en caché y es válido
             if (!string.IsNullOrEmpty(_cachedToken) && DateTime.UtcNow < _tokenExpiry)
             {
                 return _cachedToken;
@@ -261,7 +281,9 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation("Obteniendo token de Keycloak...");
 
-                var tokenEndpoint = "http://host.docker.internal:8080/realms/ds-2025-realm/protocol/openid-connect/token";
+                // Usamos host.docker.internal para acceder a Keycloak desde el contenedor si está en localhost del host
+                // Ojo: Si Keycloak está en la misma red docker, usar 'http://keycloak:8080'
+                var tokenEndpoint = "http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/token";
                 var clientId = "grupo-08";
                 var clientSecret = "248f42b5-7007-47d1-a94e-e8941f352f6f";
 
@@ -274,6 +296,7 @@ namespace ComprasAPI.Services
 
                 var content = new FormUrlEncodedContent(tokenRequest);
 
+                // Usar una instancia temporal de HttpClient para evitar conflictos
                 using var httpClient = new HttpClient();
                 var response = await httpClient.PostAsync(tokenEndpoint, content);
 
@@ -287,7 +310,7 @@ namespace ComprasAPI.Services
 
                 var tokenResponse = await response.Content.ReadFromJsonAsync<KeycloakTokenResponse>();
                 _cachedToken = tokenResponse.AccessToken;
-                _tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn - 60);
+                _tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn - 60); // Restar 60 segundos de margen
 
                 _logger.LogInformation("Token de Keycloak obtenido exitosamente");
                 return _cachedToken;
@@ -299,6 +322,7 @@ namespace ComprasAPI.Services
             }
         }
 
+        // MÉTODO CON DATOS DE PRUEBA
         private List<ProductoStock> GetProductosDePrueba()
         {
             return new List<ProductoStock>
@@ -352,6 +376,7 @@ namespace ComprasAPI.Services
         }
     }
 
+    // Model para la respuesta del token
     public class KeycloakTokenResponse
     {
         [JsonPropertyName("access_token")]
