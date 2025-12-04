@@ -14,9 +14,16 @@ export interface RegisterRequest {
 })
 export class AuthService {
   private http = inject(HttpClient);
-  // private apiUrl = 'https://localhost:7248/api/auth/register'; // 🔧 Ajustá el puerto de tu API
-  private apiUrl = 'http://localhost:5001/api/auth/register';
+  
+  private get env() {
+    return (window as any).env || {};
+  }
+
+  private apiUrl = `${this.env.apiUrl || 'http://localhost:5001/api'}/auth/register`;
   private clientSecret = '66ff9787-4fa5-46b3-b546-4ccbe604d233';
+  private keycloakUrl = this.env.keycloakUrl || 'http://localhost:8080';
+  private realm = this.env.keycloakRealm || 'ds-2025-realm';
+  private clientId = this.env.keycloakClientId || 'grupo-10';
 
  
 
@@ -41,12 +48,12 @@ export class AuthService {
   async exchangeCodeForToken(code: string): Promise<string> {
     console.log('🔄 AuthService - Intercambiando código por token...');
     
-    const tokenUrl = 'http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/token';
+    const tokenUrl = `${this.keycloakUrl}/realms/${this.realm}/protocol/openid-connect/token`;
     const redirectUri = 'http://localhost:4200/keycloak-callback';
     
     const body = new URLSearchParams();
     body.set('grant_type', 'authorization_code');
-    body.set('client_id', 'grupo-10');
+    body.set('client_id', this.clientId);
     body.set('client_secret', this.clientSecret);
     body.set('code', code);
     body.set('redirect_uri', redirectUri);
@@ -102,7 +109,7 @@ export class AuthService {
     console.log('🔑 AuthService - Redirigiendo a Keycloak...');
     
     const redirectUri = encodeURIComponent('http://localhost:4200/keycloak-callback');
-    const loginUrl = `http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/auth?client_id=grupo-10&redirect_uri=${redirectUri}&response_type=code&scope=openid`;
+    const loginUrl = `${this.keycloakUrl}/realms/${this.realm}/protocol/openid-connect/auth?client_id=${this.clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid`;
     
     window.location.href = loginUrl;
   }
@@ -110,7 +117,7 @@ export class AuthService {
   logout(): void {
     console.log('🚪 AuthService - Cerrando sesión...');
     localStorage.removeItem('auth_token');
-    const logoutUrl = `http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/logout`;
+    const logoutUrl = `${this.keycloakUrl}/realms/${this.realm}/protocol/openid-connect/logout`;
     window.location.href = logoutUrl;
   }
 

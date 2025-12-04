@@ -38,7 +38,11 @@ export class LogoutComponent implements OnInit {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // 4. Redirigir a Keycloak logout SIN redirect_uri
-      const logoutUrl = 'http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/logout';
+      const env = (window as any).env || {};
+      const keycloakUrl = env.keycloakUrl || 'http://localhost:8080';
+      const realm = env.keycloakRealm || 'ds-2025-realm';
+      
+      const logoutUrl = `${keycloakUrl}/realms/${realm}/protocol/openid-connect/logout`;
       console.log('📍 Redirigiendo a Keycloak logout...');
       
       // Usar replace para no guardar en historial

@@ -163,6 +163,11 @@ services:
       - keycloak
     networks:
       - app-network
+    environment:
+      - API_URL=http://localhost:5001/api
+      - KEYCLOAK_URL=http://localhost:8080
+      - KEYCLOAK_REALM=ds-2025-realm
+      - KEYCLOAK_CLIENT_ID=grupo-10
 
   compras-db:
     image: mysql:8.0

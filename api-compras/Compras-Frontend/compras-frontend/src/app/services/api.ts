@@ -10,8 +10,8 @@ import { tap, catchError, finalize } from 'rxjs/operators';
 export class ApiService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
-  // private apiUrl = 'https://localhost:7248/api'; // Tu backend .NET original
-  private apiUrl = 'http://localhost:5001/api'; // Backend en Docker
+  
+  private apiUrl = (window as any).env?.apiUrl || 'http://localhost:5001/api';
 
 
   // Método para hacer requests autenticados de manera SÍNCRONA con el token

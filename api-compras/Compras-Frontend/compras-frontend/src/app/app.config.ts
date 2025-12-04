@@ -60,17 +60,17 @@ import { KeycloakService } from 'keycloak-angular';
 export function initializeKeycloak(keycloakService: KeycloakService) {
   return () => {
     console.log('🔑 Inicializando Keycloak...');
+    const env = (window as any).env || {};
     
     return keycloakService.init({
       config: {
-        url: 'http://localhost:8080',
-        realm: 'ds-2025-realm',
-        clientId: 'grupo-10'
+        url: env.keycloakUrl || 'http://localhost:8080',
+        realm: env.keycloakRealm || 'ds-2025-realm',
+        clientId: env.keycloakClientId || 'grupo-10'
       },
       initOptions: {
-        onLoad: 'login-required', // ← CAMBIAR de 'check-sso' a 'login-required'
+        onLoad: 'check-sso',
         checkLoginIframe: false
-        // ELIMINAR silentCheckSsoRedirectUri - ya no es necesario
       },
       loadUserProfileAtStartUp: false
     }).then(authenticated => {
