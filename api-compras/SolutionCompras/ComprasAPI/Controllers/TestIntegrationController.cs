@@ -168,7 +168,72 @@ namespace ComprasAPI.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
-      
+        [HttpGet("logistica/shipments/{id}")]
+        public async Task<IActionResult> GetShipmentById(int id)
+        {
+            try
+            {
+                _logger.LogInformation($"🔎 Buscando envío {id}...");
+                var result = await _logisticaService.ObtenerSeguimientoAsync(id);
+                
+                // Si devuelve el ID, asumimos éxito (ajusta según tu lógica de retorno de error)
+                if (result != null && result.ShippingId > 0)
+                    return Ok(new { message = "Encontrado", data = result });
+                else
+                    return NotFound(new { message = "No se encontró el envío o hubo error" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+        /*
+        // 4. Prueba Búsqueda con Filtros (GET shipping?...)
+        [HttpGet("logistica/shipments")]
+        public async Task<IActionResult> GetShipmentsFiltered(
+            [FromQuery] int? userId,
+            [FromQuery] string? status,
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate,
+            [FromQuery] int page = 1,
+            [FromQuery] int limit = 10)
+        {
+            try
+            {
+                _logger.LogInformation("🔎 Probando filtros de envíos...");
+                var result = await _logisticaService.ObtenerEnviosFiltradosAsync(userId, status, fromDate, toDate, page, limit);
+                return Ok(new { message = "Respuesta de Logística", data = result });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+        */
+      // 5. Prueba Cancelar Envío (POST logistica/shipments/{id}/cancel)
+        [HttpPost("logistica/shipments/{id}/cancel")]
+        public async Task<IActionResult> CancelShipment(int id)
+        {
+            try
+            {
+                _logger.LogInformation($"🛑 Solicitando cancelación para envío {id}...");
+                
+                var exito = await _logisticaService.CancelarEnvioAsync(id);
+
+                if (exito)
+                {
+                    return Ok(new { message = $"Envío {id} cancelado exitosamente." });
+                }
+                else
+                {
+                    return BadRequest(new { message = $"No se pudo cancelar el envío {id}. Verifique si existe o si ya fue entregado." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
         [HttpPost("logistica/calculate-shipping")]
         public async Task<IActionResult> TestCalculateShipping()
         {

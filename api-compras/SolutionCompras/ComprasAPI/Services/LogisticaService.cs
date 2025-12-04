@@ -314,6 +314,95 @@ namespace ComprasAPI.Services
         }
 
         // ✅ MÉTODO PARA OBTENER COSTO ESTIMADO
+        // ✅ NUEVO: Implementación de búsqueda por filtros
+        /*
+        public async Task<object> ObtenerEnviosFiltradosAsync(int? userId, string? status, DateTime? fromDate, DateTime? toDate, int page, int limit)
+        {
+            try
+            {
+                _logger.LogInformation("🔍 Consultando envíos a Logística con filtros...");
+
+                // 1. Obtener Token
+                var token = await ObtenerTokenKeycloakAsync();
+
+                // 2. Construir Query String
+                var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
+                if (userId.HasValue) query["user_id"] = userId.ToString();
+                if (!string.IsNullOrEmpty(status)) query["status"] = status;
+                if (fromDate.HasValue) query["from_date"] = fromDate.Value.ToString("yyyy-MM-dd");
+                if (toDate.HasValue) query["to_date"] = toDate.Value.ToString("yyyy-MM-dd");
+                query["page"] = page.ToString();
+                query["limit"] = limit.ToString();
+
+                var url = $"shipping?{query}"; // O 'api/shipping' si usas prefijo
+                
+                var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var response = await _httpClient.SendAsync(httpRequest);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Devolvemos el JSON crudo deserializado como objeto dinámico para ver exactamente qué manda Logística
+                    var content = await response.Content.ReadAsStringAsync();
+                    return JsonSerializer.Deserialize<object>(content); 
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning($"⚠️ Error listando envíos: {response.StatusCode} - {error}");
+                    return new { error = "Error en Logística API", details = error };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "💥 Error conectando con Logística para listado");
+                return new { error = ex.Message };
+            }
+        }
+        */
+        public async Task<bool> CancelarEnvioAsync(int shippingId)
+        {
+            try
+            {
+                _logger.LogInformation($"🚫 Cancelando envío {shippingId} en Logística...");
+
+                var token = await ObtenerTokenKeycloakAsync();
+                
+                // La URL debe coincidir con el endpoint de Logística
+                var url = $"shipping/{shippingId}/cancel"; // Si usas prefijo 'api', añade 'api/'
+                
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var response = await _httpClient.SendAsync(httpRequest);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation($"✅ Envío {shippingId} cancelado correctamente.");
+                    return true;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning($"⚠️ No se pudo cancelar el envío {shippingId}. Status: {response.StatusCode}. Error: {errorContent}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"💥 Error intentando cancelar envío {shippingId}");
+                return false;
+            }
+        }
         private async Task<decimal> ObtenerCostoEstimadoAsync(CreateShippingRequest request)
         {
             try
@@ -384,6 +473,7 @@ namespace ComprasAPI.Services
         {
             try
             {
+                
                 _logger.LogInformation($"🔍 Obteniendo seguimiento para envío {shippingId}...");
 
                 var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"shipping/{shippingId}");
