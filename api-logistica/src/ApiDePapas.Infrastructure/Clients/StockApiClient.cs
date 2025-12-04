@@ -108,18 +108,20 @@ namespace ApiDePapas.Infrastructure.Clients
 
             _logger.LogWarning("[STOCK RESPONSE] JSON Recibido para ID {Id}: {Json}", product.id, jsonString);
 
-            // 5. Leer la respuesta y convertirla de JSON a tu objeto ProductDetail otro puto debería hacer esto cabrón
+            // 5. Leer la respuesta y convertirla de JSON a tu objeto ProductDetail 
             using (JsonDocument doc = JsonDocument.Parse(jsonString))
             {
                 var root = doc.RootElement;
                 var dims = root.GetProperty("dimensiones");
+                var ubicacion = root.GetProperty("ubicacion");
                 var productDetail = new ProductDetail
                 {
                     id = root.GetProperty("id").GetInt32(),
                     weight = root.GetProperty("pesoKg").GetSingle(),
                     length = dims.GetProperty("largoCm").GetSingle(),
                     width = dims.GetProperty("anchoCm").GetSingle(),
-                    height = dims.GetProperty("altoCm").GetSingle()
+                    height = dims.GetProperty("altoCm").GetSingle(),
+                    warehouse_postal_code = ubicacion.GetProperty("postalCode").GetString(),
                 };
 
                 _logger.LogInformation("Datos de Stock obtenidos exitosamente para ProductId: {ProductId}", product.id);

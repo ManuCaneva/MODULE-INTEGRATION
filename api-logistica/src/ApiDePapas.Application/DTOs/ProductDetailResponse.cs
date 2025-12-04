@@ -18,5 +18,10 @@ namespace ApiDePapas.Application.DTOs
 
         [JsonPropertyName("height")]
         public float Height { get; set; }
+
+        // Nuevo campo agregado para mejorar el calculo
+        // permite nulo porque no era parte del contrato original
+        [JsonPropertyName("warehouse_postal_code")]
+        public string? WarehousePostalCode { get; set; }
     }
 }

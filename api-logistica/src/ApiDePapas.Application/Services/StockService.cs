@@ -40,6 +40,7 @@ namespace ApiDePapas.Application.Services
                     length = productDetailResponse.Length,
                     width = productDetailResponse.Width,
                     height = productDetailResponse.Height,
+                    warehouse_postal_code = productDetailResponse.WarehousePostalCode
                 };
 
                 return detail;
@@ -54,6 +55,7 @@ namespace ApiDePapas.Application.Services
                     length = 0,
                     width = 0,
                     height = 0,
+                    warehouse_postal_code = null
                 };
             }
         }
