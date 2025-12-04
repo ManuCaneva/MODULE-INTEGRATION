@@ -107,7 +107,7 @@ services:
     ports:
       - "3000:5173"
     environment:
-      VITE_PUBLIC_API_URL: http://localhost:5002/api
+      VITE_PUBLIC_API_URL: http://localhost:80/logistica
       VITE_PRIVATE_API_URL: http://api:8080/api
       PUBLIC_BACKEND_API_KEY: "your-super-secret-dashboard-api-key"
     volumes:
