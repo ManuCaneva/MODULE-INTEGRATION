@@ -1,6 +1,7 @@
 {
   "realm": "ds-2025-realm",
   "enabled": true,
+  "sslRequired": "none",
   "defaultDefaultClientScopes": [
     "usuarios:read",
     "usuarios:write",
