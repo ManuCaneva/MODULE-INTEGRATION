@@ -426,10 +426,17 @@ namespace ComprasAPI.Services
         public async Task<List<TransportMethod>> ObtenerMetodosTransporteAsync()
         {
             try
-            {
+            {   
                 _logger.LogInformation("🚛 Obteniendo métodos de transporte...");
 
+                var token = await ObtenerTokenKeycloakAsync();
+
                 var httpRequest = new HttpRequestMessage(HttpMethod.Get, "shipping/transport-methods");
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
                 var response = await _httpClient.SendAsync(httpRequest);
 
                 if (response.IsSuccessStatusCode)
