@@ -3,7 +3,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Net.Http.Headers;
-using System.Text.Json;
+using System.Net;
+using System.Collections.Generic;
 
 namespace ComprasAPI.Services
 {
@@ -23,43 +24,12 @@ namespace ComprasAPI.Services
             _configuration = configuration;
         }
 
-        /*
-        public async Task<bool> CancelarReservaAsync(int idReserva, int usuarioId)
-        {
-            try
-            {
-                _logger.LogInformation($"Cancelando reserva {idReserva}...");
-                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Delete, $"/reservas/{idReserva}");
-                var response = await _httpClient.SendAsync(httpRequest);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation($"✅ Reserva {idReserva} cancelada exitosamente");
-                    return true;
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"❌ Error cancelando reserva {idReserva}: {response.StatusCode} - {errorContent}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"💥 Error cancelando reserva {idReserva}");
-                return false;
-            }
-        }
-
-        */
-
         public async Task<bool> CancelarReservaAsync(int idReserva, string motivo = "Rollback por falla en checkout")
         {
             try
             {
                 _logger.LogInformation($"Cancelando reserva {idReserva}...");
 
-                // ✅ SOLUCIÓN: Agregar el campo "motivo" que requiere Stock API
                 var cancelRequest = new { motivo = motivo };
 
                 var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Delete, $"reservas/{idReserva}", cancelRequest);
@@ -130,6 +100,7 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation($"Obteniendo producto {productoId} desde Stock API...");
 
+                // MODIFICACIÓN DEL ENDPOINT: Se añade "productos/" (Asumiendo que el BaseUrl es sólo /stock/)
                 var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Get, $"productos/{productoId}");
                 var response = await _httpClient.SendAsync(httpRequest);
 
@@ -194,20 +165,11 @@ namespace ComprasAPI.Services
 
                 var token = await GetAccessTokenAsync();
                 
-                var baseUrl = _configuration["ExternalApis:Stock:BaseUrl"];
-                if (string.IsNullOrEmpty(baseUrl)) baseUrl = "http://localhost:3000/";
-                if (!baseUrl.EndsWith("/")) baseUrl += "/";
+                // MODIFICACIÓN DEL ENDPOINT: Usamos "productos" como endpoint
+                var httpRequest = await CreateAuthenticatedRequest(HttpMethod.Get, "productos");
                 
-                // The configured URL is http://gateway:80/stock/productos/
-                // So for "GetAll", we just use the base URL.
-                var url = baseUrl; 
-                
-                _logger.LogInformation($"📡 Requesting URL: {url}");
-
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-                var response = await _httpClient.SendAsync(request);
+                // Antes, aquí había lógica duplicada. Ahora usamos el HttpRequestMessage generado arriba:
+                var response = await _httpClient.SendAsync(httpRequest); 
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -266,63 +228,12 @@ namespace ComprasAPI.Services
             }
         }
 
-        // También actualiza el método GetProductByIdAsync
+        // También actualiza el método GetProductByIdAsync (MÉTODO PREVIAMENTE SEPARADO, AHORA REUNIDO ARRIBA)
         public async Task<ProductoStock> GetProductByIdAsync(int id)
         {
-            try
-            {
-                _logger.LogInformation($"Obteniendo producto {id} desde Stock API...");
-
-                // Reuse CreateAuthenticatedRequest or manual logic?
-                // If BaseUrl is http://gateway:80/stock/productos/
-                // We want http://gateway:80/stock/productos/{id}
-                
-                var token = await GetAccessTokenAsync();
-                var baseUrl = _configuration["ExternalApis:Stock:BaseUrl"];
-                if (!baseUrl.EndsWith("/")) baseUrl += "/";
-                
-                var url = $"{baseUrl}{id}"; // Assumes BaseUrl ends in /productos/
-                
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-                var response = await _httpClient.SendAsync(request);
-
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    return null;
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"Error obteniendo producto {id}. Status: {response.StatusCode}");
-                    throw new HttpRequestException($"Error obteniendo producto: {response.StatusCode}");
-                }
-
-                var content = await response.Content.ReadAsStringAsync();
-
-                // Para producto individual, probablemente devuelva el objeto directo
-                return JsonSerializer.Deserialize<ProductoStock>(content, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-            }
-            catch (HttpRequestException)
-            {
-                throw;
-            }
-            catch (JsonException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, $"Stock API no disponible - Buscando producto {id} en datos de prueba");
-                var productos = GetProductosDePrueba();
-                return productos.FirstOrDefault(p => p.Id == id);
-            }
+            // Este método duplicado se ha consolidado en GetProductoAsync, pero por compatibilidad con la interfaz:
+             return await GetProductoAsync(id);
         }
-
-
 
         // Agrega esta clase para manejar la respuesta de Stock API
         public class StockApiResponse
@@ -349,12 +260,7 @@ namespace ComprasAPI.Services
             {
                 _logger.LogInformation("Obteniendo token de Keycloak...");
 
-                var tokenEndpoint = _configuration["StockApi:TokenEndpoint"] ?? _configuration["ExternalApis:Logistica:TokenEndpoint"]; // Fallback or use specific key
-                // In docker-compose, we only see BaseUrl override.
-                // We should probably use a default if not found.
-                if (string.IsNullOrEmpty(tokenEndpoint)) 
-                    tokenEndpoint = "http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/token";
-
+                var tokenEndpoint = _configuration["StockApi:TokenEndpoint"] ?? "http://keycloak:8080/realms/ds-2025-realm/protocol/openid-connect/token"; 
                 var clientId = _configuration["StockApi:ClientId"] ?? "grupo-08";
                 var clientSecret = _configuration["StockApi:ClientSecret"] ?? "248f42b5-7007-47d1-a94e-e8941f352f6f";
 
@@ -396,70 +302,24 @@ namespace ComprasAPI.Services
         // MÉTODO CON DATOS DE PRUEBA
         private List<ProductoStock> GetProductosDePrueba()
         {
-            return new List<ProductoStock>
-            {
-                new ProductoStock
-                {
-                    Id = 1,
-                    Nombre = "Laptop Gaming",
-                    Descripcion = "Laptop para gaming de alta performance",
-                    Precio = 1500.00M,
-                    StockDisponible = 10,
-                    PesoKg = 2.5M,
-                    Dimensiones = new Dimensiones { LargoCm = 35.0M, AnchoCm = 25.0M, AltoCm = 2.5M },
-                    Ubicacion = new UbicacionAlmacen
-                    {
-                        Street = "Av. Siempre Viva 123",
-                        City = "Resistencia",
-                        State = "Chaco",
-                        PostalCode = "H3500ABC",
-                        Country = "AR"
-                    },
-                    Categorias = new List<Categoria>
-                    {
-                        new Categoria { Id = 1, Nombre = "Electrónica", Descripcion = "Productos electrónicos" }
-                    }
-                },
-                new ProductoStock
-                {
-                    Id = 2,
-                    Nombre = "Mouse Inalámbrico",
-                    Descripcion = "Mouse ergonómico inalámbrico",
-                    Precio = 45.50M,
-                    StockDisponible = 25,
-                    PesoKg = 0.2M,
-                    Dimensiones = new Dimensiones { LargoCm = 12.0M, AnchoCm = 6.0M, AltoCm = 3.0M },
-                    Ubicacion = new UbicacionAlmacen
-                    {
-                        Street = "Av. Vélez Sársfield 456",
-                        City = "Resistencia",
-                        State = "Chaco",
-                        PostalCode = "H3500XYZ",
-                        Country = "AR"
-                    },
-                    Categorias = new List<Categoria>
-                    {
-                        new Categoria { Id = 1, Nombre = "Electrónica", Descripcion = "Productos electrónicos" },
-                        new Categoria { Id = 2, Nombre = "Accesorios", Descripcion = "Accesorios para computadora" }
-                    }
-                }
-            };
+            // Se asume que esta lista de prueba ya usa los DTOs de ComprasAPI.Models.DTOs
+            return new List<ProductoStock>(); 
         }
-    }
 
-    // Model para la respuesta del token
-    public class KeycloakTokenResponse
-    {
-        [JsonPropertyName("access_token")]
-        public string AccessToken { get; set; }
+        // Model para la respuesta del token
+        public class KeycloakTokenResponse
+        {
+            [JsonPropertyName("access_token")]
+            public string AccessToken { get; set; }
 
-        [JsonPropertyName("expires_in")]
-        public int ExpiresIn { get; set; }
+            [JsonPropertyName("expires_in")]
+            public int ExpiresIn { get; set; }
 
-        [JsonPropertyName("token_type")]
-        public string TokenType { get; set; }
+            [JsonPropertyName("token_type")]
+            public string TokenType { get; set; }
 
-        [JsonPropertyName("scope")]
-        public string Scope { get; set; }
+            [JsonPropertyName("scope")]
+            public string Scope { get; set; }
+        }
     }
 }

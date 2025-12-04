@@ -68,7 +68,7 @@ services:
       - Authentication__Keycloak__Authority=http://keycloak:8080/realms/ds-2025-realm
       - Authentication__Keycloak__ValidIssuer=http://localhost:8080/realms/ds-2025-realm
       - Authentication__Keycloak__Audience=grupo-06
-      - StockApi__BaseUrl=http://gateway:80/stock/productos/
+      - StockApi__BaseUrl=http://gateway:80/stock/
       - DB_HOST=logistica-db 
     ports:
       - "5002:8080"
@@ -160,7 +160,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80 # Escucha en el puerto 80 interno
       - ExternalApis__Logistica__BaseUrl=http://gateway:80/logistica/
-      - ExternalApis__Stock__BaseUrl=http://gateway:80/stock/productos/
+      - ExternalApis__Stock__BaseUrl=http://gateway:80/stock/
     ports:
       - "5001:80" # Exponemos en 5001 para no chocar con Logística (5002)
     depends_on:
