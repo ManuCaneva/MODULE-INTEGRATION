@@ -1,0 +1,30 @@
+{% load static %}
+<header class="main-header">
+    <nav class="nav-container">
+        <div class="nav-logo">
+            <a href="{% url 'inicio' %}">
+                <img src="{% static 'imagenes/logo.png' %}" alt="Logo" class="logo-icon">
+                <span>MiTienda</span>
+            </a>
+        </div>
+        <div class="nav-links">
+            <a href="{% url 'inicio' %}" class="nav-link {% if request.resolver_match.url_name == 'inicio' %}active{% endif %}">Catalogo</a>
+            <a href="{% url 'pedidos:mis_pedidos' %}" class="nav-link {% if request.resolver_match.url_name == 'mis_pedidos' %}active{% endif %}">Mis Pedidos</a>
+        </div>
+        <div class="nav-actions">
+            {% if user.is_authenticated %}
+                <span class="action-link">Hola, {{ user.first_name|default:user.username|title }}</span>
+                <a href="{% url 'login:cerrar_sesion' %}" class="action-link">Salir</a>
+            {% else %}
+                <a href="{% url 'login:login' %}" class="action-link">Ingresar</a>
+            {% endif %}
+            <button id="cart-icon" class="cart-button cart-icon-container" aria-label="Abrir carrito de compras" data-checkout-url="{% url 'pedidos:checkout' %}">
+                <svg class="cart-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.658-.463 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                <span class="cart-badge">0</span>
+            </button>
+             <button class="mobile-menu-toggle" aria-label="Abrir menú">
+                 <svg class="mobile-menu-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+            </button>
+        </div>
+    </nav>
+</header>

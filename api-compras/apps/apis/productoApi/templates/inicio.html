@@ -1,0 +1,29 @@
+
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+<!-- Título de la página, si lo necesitas -->
+ INICIO
+{% endblock %}
+
+{% block extra_head %}
+<!-- Extra head -->
+{% endblock %}
+
+
+
+{% block content %}
+
+<div class="container text-center mt-4">
+    <h1>Bienvenido a la tienda</h1>
+    <p>Esto es el inicio estimado</p>
+
+    <!-- Botón de acceso al login -->
+    <a href="{% url 'login:login' %}">Iniciar Sesión</a>
+
+</div>
+
+{% endblock %}
+

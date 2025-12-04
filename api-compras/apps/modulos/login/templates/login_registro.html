@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Conectando con Keycloak{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .kc-redirect-wrapper {
+      min-height: calc(100vh - 120px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      background: radial-gradient(circle at top, #f5f7ff 0%, #ffffff 50%);
+    }
+    .kc-panel {
+      width: min(480px, 100%);
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(14, 24, 54, 0.15);
+      padding: 2.5rem;
+      text-align: center;
+    }
+    .kc-spinner {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 4px solid rgba(107, 92, 255, 0.2);
+      border-top-color: #6b5cff;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 1.5rem;
+    }
+    .kc-panel h1 {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+      color: #0e1836;
+    }
+    .kc-panel p {
+      margin: 0 auto 1.5rem;
+      color: #5c6484;
+      max-width: 360px;
+    }
+    .kc-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .kc-btn-primary,
+    .kc-btn-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 48px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .kc-btn-primary {
+      background: linear-gradient(120deg, #6b5cff, #8f7bff);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(107, 92, 255, 0.25);
+    }
+    .kc-btn-link {
+      border: 1px solid rgba(14, 24, 54, 0.15);
+      color: #0e1836;
+      background: #fff;
+    }
+    .kc-helpers {
+      margin-top: 1.25rem;
+      font-size: 0.95rem;
+      color: #5c6484;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<section class="kc-redirect-wrapper">
+  <div class="kc-panel" role="alert">
+    <div class="kc-spinner" aria-hidden="true"></div>
+    <h1>Conectando con Keycloak...</h1>
+    <p>Estamos enviándote al proveedor de identidad para autenticarte lo más rápido posible.</p>
+
+    <div class="kc-actions">
+      <a href="{{ keycloak_login_url }}" class="kc-btn-primary">Ir ahora</a>
+      <a href="{{ keycloak_registration_url }}" class="kc-btn-link">Crear cuenta en Keycloak</a>
+    </div>
+
+    <div class="kc-helpers">
+      {% if auto_redirect %}
+        Redirigiendo automáticamente. Si no sucede en unos segundos, utiliza los botones.
+      {% else %}
+        Redirección automática desactivada manualmente.
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% if auto_redirect %}
+  <script>
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        window.location.href = "{{ keycloak_login_url|escapejs }}";
+      }, 150);
+    });
+  </script>
+{% endif %}
+{% endblock %}

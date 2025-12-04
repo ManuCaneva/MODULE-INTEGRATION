@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inicio{% endblock %}
+
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/apps/modulos/inicio/inicio.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container shop-layout">
+    <aside class="filters-sidebar" id="filters-sidebar">
+        <div class="filters-header-mobile">
+            <h3>Filtros</h3>
+            <button id="close-filters-btn" class="close-btn">&times;</button>
+        </div>
+        <form method="get" class="filter-form">
+            <div class="filter-group">
+                <label for="busqueda">Buscar</label>
+                <input type="text" id="busqueda" name="busqueda" placeholder="Nombre" value="{{ filtros.busqueda }}"
+                    class="form-input">
+            </div>
+
+            <div class="filter-group">
+                <label for="categoria">Categoría</label>
+                <select id="categoria" name="categoria" class="form-select">
+                    <option value="">Todas</option>
+                    {% for categoria in categorias %}
+                    <option value="{{ categoria }}" {% if filtros.categoria == categoria %}selected{% endif %}>
+                        {{ categoria }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="marca">Marca</label>
+                <select id="marca" name="marca" class="form-select">
+                    <option value="">Todas</option>
+                    {% for marca in marcas %}
+                    <option value="{{ marca }}" {% if filtros.marca == marca %}selected{% endif %}>
+                        {{ marca }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group price-range">
+                <div>
+                    <label for="precio_minimo">Precio Mín</label>
+                    <input type="number" step="0.01" id="precio_minimo" name="precio_minimo"
+                        value="{{ filtros.precio_minimo }}" placeholder="0" class="form-input">
+                </div>
+                <div>
+                    <label for="precio_maximo">Precio Máx</label>
+                    <input type="number" step="0.01" id="precio_maximo" name="precio_maximo"
+                        value="{{ filtros.precio_maximo }}" placeholder="0" class="form-input">
+                </div>
+            </div>
+
+            <div class="filter-buttons">
+                <button type="submit" class="btn btn-primary">Aplicar</button>
+                <a href="{% url 'inicio' %}" class="btn btn-secondary">Limpiar</a>
+            </div>
+        </form>
+    </aside>
+
+    <main class="product-grid-container">
+        <div class="grid-header">
+            <h2>Productos</h2>
+            <button id="open-filters-btn" class="btn btn-secondary btn-filters-mobile">
+                Filtros
+            </button>
+            <span>
+                {{ cantidad_resultados }} resultado{% if cantidad_resultados != 1 %}s{% endif %}
+            </span>
+        </div>
+
+        {% if productos %}
+        <div class="product-grid">
+            {% for producto in productos %}
+            <div class="product-card" data-id="{{ producto.id }}" data-nombre="{{ producto.nombre }}"
+                data-precio="{{ producto.precio }}" data-imagen="{{ producto.imagen }}">
+                <div class="card-header">
+                    <span class="category-tag">{{ producto.categoria }}</span>
+                </div>
+                <div class="product-image-container">
+                    <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}">
+                </div>
+                <div class="product-info">
+                    <span class="brand">{{ producto.marca }}</span>
+                    <h3 class="product-name">{{ producto.nombre }}</h3>
+                    <p class="price">$ {{ producto.precio|floatformat:2 }}</p>
+                    <div class="card-actions">
+                        <button class="add-to-cart-btn">Agregar al Carrito</button>
+                        <div class="quantity-selector hidden">
+                            <button class="quantity-btn minus-btn">-</button>
+                            <input type="number" class="quantity-input" value="1" min="1">
+                            <button class="quantity-btn plus-btn">+</button>
+                        </div>
+                        <button class="btn confirm-btn hidden">Confirmar</button>
+                        <button type="button" class="btn remove-btn hidden" aria-label="Eliminar del carrito">X</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {# --- PAGINACIÓN --- #}
+        {% if pagination.total_pages %}
+        <div class="pagination-container">
+
+            {# Botón Anterior #}
+            {% if pagination.has_prev %}
+            <a class="pagination-btn prev"
+                href="?page={{ pagination.prev_page }}&limit=18&busqueda={{ filtros.busqueda|urlencode }}&categoria={{ filtros.categoria|urlencode }}&marca={{ filtros.marca|urlencode }}&precio_minimo={{ filtros.precio_minimo }}&precio_maximo={{ filtros.precio_maximo }}">
+                « Anterior
+            </a>
+            {% endif %}
+
+            <div class="pagination-pages">
+                {# Generamos las páginas 1..N sin filtros extras #}
+                {% for _ in ""|center:pagination.total_pages %}
+                <a class="page-number {% if forloop.counter == pagination.current_page %}active{% endif %}"
+                    href="?page={{ forloop.counter }}&limit=18&busqueda={{ filtros.busqueda|urlencode }}&categoria={{ filtros.categoria|urlencode }}&marca={{ filtros.marca|urlencode }}&precio_minimo={{ filtros.precio_minimo }}&precio_maximo={{ filtros.precio_maximo }}">
+                    {{ forloop.counter }}
+                </a>
+                {% endfor %}
+            </div>
+
+            {# Botón Siguiente #}
+            {% if pagination.has_next %}
+            <a class="pagination-btn next"
+                href="?page={{ pagination.next_page }}&limit=18&busqueda={{ filtros.busqueda|urlencode }}&categoria={{ filtros.categoria|urlencode }}&marca={{ filtros.marca|urlencode }}&precio_minimo={{ filtros.precio_minimo }}&precio_maximo={{ filtros.precio_maximo }}">
+                Siguiente »
+            </a>
+            {% endif %}
+
+        </div>
+        {% endif %}
+        {# --- FIN PAGINACIÓN --- #}
+
+
+        {% else %}
+        <p class="no-products-found">
+            No se encontraron productos con los filtros seleccionados.
+        </p>
+        {% endif %}
+    </main>
+</div>
+<div id="filters-overlay" class="filters-overlay"></div>
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script src="{% static 'js/apps/modulos/inicio/inicio.js' %}"></script>
+{% endblock %}

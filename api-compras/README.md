@@ -1,262 +1,133 @@
---Crear usuario--
-
-POST 
-
-http://localhost:5000/api/auth/register
-
-    HEADERS: 
-
-    nada.
-
-    BODY:
-
-    raw:JSON
-    
-    {
-    "FirstName":"Lionel",
-    "LastName":"Messi", 
-    "Email": "messi@gmail.com",
-    "Password": "123456",
-    "RepeatPassword": "123456"
-    }
-
-    devuelve:
-
-    {
-    "message": "Usuario registrado correctamente"
-    }
-
-
---Obtención del token para la autenticación con keycloak--
-
-POST
-
-http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/token
-
-    BODY
-
-    x-www-from-urlencoded
-
-    key		        value
-
-    client_id	    grupo-10
-    client_secret	66ff9787-4fa5-46b3-b546-4ccbe604d233
-    grant_type	    password
-    username        almiron@gmail.com
-    password	    123456
-
-    HEADERS
-
-    key		        value
-
-    Content-Type	application/x-www-form-urlencoded
-
-
-    "devuelve Access token"
-
---Agregar producto al carrito--
-
-POST
-
-http://localhost:5000/api/shopcart
-
-    HEADERS
-
-    key		        value
-
-    Authorization	Bearer tu_token
-    Content-Type	application/json
-
-    BODY
-
-    raw JSON 
-
-    {
-    "productId": 1,
-    "quantity": 1
-    }
-
-    devuelve este mensaje:
-
-        {
-        "message": "Producto agregado al carrito",
-        "cartId": 1,
-        "total": 1500.00,
-        "itemsCount": 1
-    }
-
---Confirmar compra una vez realizada la reserva por parte de Stock--
-
-POST 
-
-http://localhost:5000/api/shopcart/checkout
-
-    HEADERS
-
-    key		        value
-
-    Authorization	Bearer tu_token
-    Content-Type	application/json
-
-    BODY
-
-    raw JSON 
-
-    {
-    "deliveryAddress": {
-        "street": "Junin 377",
-        "city": "Corrientes",
-        "state": "Corrientes",
-        "postalCode": "3400",
-        "country": "AR"
-    },
-    "transportType": "road"
-    }
-
-    devuelve este mensaje:
-
-        {
-        "reservaId": 3947,
-        "shippingId": 6346,
-        "shippingCost": 45.50,
-        "estimatedDelivery": "2025-11-23T15:13:48Z",
-        "message": "Pedido creado exitosamente",
-        "reservaStatus": "confirmado"
-    }
-
---Ver productos--
-
-GET 
-
-http://localhost:5000/api/product
-
-    HEADERS
-
-    key		        value
-
-    Authorization	Bearer tu_token
-    Content-Type	application/json
-
-    BODY
-
-    none 
-
-    devuelve: 
-
-    [
-    {
-        "id": 1,
-        "nombre": "Laptop Gaming",
-        "descripcion": "Laptop para gaming de alta performance",
-        "precio": 1500.00,
-        "stockDisponible": 10,
-        "pesoKg": 2.5,
-        "dimensiones": {
-            "largoCm": 35.0,
-            "anchoCm": 25.0,
-            "altoCm": 2.5
-        },
-        "ubicacion": {
-            "street": "Av. Siempre Viva 123",
-            "city": "Resistencia",
-            "state": "Chaco",
-            "postalCode": "H3500ABC",
-            "country": "AR"
-        },
-        "categorias": [
-            {
-                "id": 1,
-                "nombre": "Electrónica",
-                "descripcion": "Productos electrónicos"
-            }
-        ]
-    },
-    {
-        "id": 2,
-        "nombre": "Mouse Inalámbrico",
-        "descripcion": "Mouse ergonómico inalámbrico",
-        "precio": 45.50,
-        "stockDisponible": 25,
-        "pesoKg": 0.2,
-        "dimensiones": {
-            "largoCm": 12.0,
-            "anchoCm": 6.0,
-            "altoCm": 3.0
-        },
-        "ubicacion": {
-            "street": "Av. Vélez Sársfield 456",
-            "city": "Resistencia",
-            "state": "Chaco",
-            "postalCode": "H3500XYZ",
-            "country": "AR"
-        },
-        "categorias": [
-            {
-                "id": 1,
-                "nombre": "Electrónica",
-                "descripcion": "Productos electrónicos"
-            },
-            {
-                "id": 2,
-                "nombre": "Accesorios",
-                "descripcion": "Accesorios para computadora"
-            }
-        ]
-    },
-    {
-        "id": 3,
-        "nombre": "Teclado Mecánico",
-        "descripcion": "Teclado mecánico RGB",
-        "precio": 120.00,
-        "stockDisponible": 15,
-        "pesoKg": 1.1,
-        "dimensiones": {
-            "largoCm": 44.0,
-            "anchoCm": 14.0,
-            "altoCm": 3.0
-        },
-        "ubicacion": {
-            "street": "Calle Falsa 123",
-            "city": "Resistencia",
-            "state": "Chaco",
-            "postalCode": "H3500DEF",
-            "country": "AR"
-        },
-        "categorias": [
-            {
-                "id": 1,
-                "nombre": "Electrónica",
-                "descripcion": "Productos electrónicos"
-            }
-        ]
-    }
-]
-
---Ver carrito--
-
-GET 
-
-http://localhost:5000/api/shopcart
-
-
-    HEADERS
-
-    key		        value
-
-    Authorization	Bearer tu_token
-    Content-Type	application/json
-
-    BODY
-
-    none 
-
-    devuelve:
-
-        {
-        "id": 1,
-        "total": 0,
-        "userId": 4,
-        "items": []
-    }
-
-
+# DesarrolloAPP
+
+## 🚀 Inicio Rápido
+
+**¿Primera vez instalando?** → Lee **[INICIO_RAPIDO.md](INICIO_RAPIDO.md)** (5 minutos)
+
+**¿Necesitas instrucciones detalladas?** → Lee **[INSTALACION.md](INSTALACION.md)** (completo)
+
+**Ver responsabilidades** → Lee **[Responsabilidades](./documentacion/Responsabilidades/)** (completo)
+
+### Instalación Express:
+
+```bash
+git clone https://github.com/Maximo-Vazquez/DesarrolloAPP.git
+cd DesarrolloAPP
+python -m venv venv
+.\venv\Scripts\Activate.ps1    # Windows
+pip install -r requirements.txt
+python manage.py migrate
+python verificar_instalacion.py  # ← Verifica que todo funciona ✅
+```
+
+---
+
+## Principales Funcionalidades
+
+- **Autenticación**:  
+  - Login/registro tradicional y social (Google) usando [django-allauth](https://django-allauth.readthedocs.io/).
+  - Modelo de usuario personalizado: [`administracion.Usuario`](apps/administracion/models.py).
+  - Adaptador social para vincular cuentas por email: [`apps.login.adapters.MySocialAccountAdapter`](apps/login/adapters.py).
+
+- **Administración**:  
+  - Panel de administración personalizado.
+  - Gestión de usuarios, productos y pedidos.
+
+- **Pedidos y Clientes**:  
+  - Gestión de pedidos, seguimiento y notificaciones por email.
+  - Plantillas de emails para confirmación y entrega de pedidos en [`templates/emails/`](templates/emails/).
+
+- **Frontend**:  
+  - Plantillas base y componentes reutilizables.
+  - Archivos estáticos organizados en carpetas por funcionalidad.
+
+- **Docker**:  
+  - Soporte para despliegue en Docker y scripts para construir y subir imágenes a Docker Hub en [`utils/imagenes/contruir_imagen.py`](utils/imagenes/contruir_imagen.py).
+
+## Instalación y Ejecución
+
+⚠️ **IMPORTANTE:** Lee primero [INSTALACION.md](INSTALACION.md) para instrucciones detalladas paso a paso.
+
+### Instalación Rápida:
+
+1. **Clonar el repositorio**  
+   ```sh
+   git clone https://github.com/Maximo-Vazquez/DesarrolloAPP.git
+   cd DesarrolloAPP
+   ```
+
+2. **Crear y activar el entorno virtual**  
+   
+   **Windows (PowerShell):**
+   ```powershell
+   python -m venv venv
+   .\venv\Scripts\Activate.ps1
+   ```
+   
+   **Linux/Mac:**
+   ```sh
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Instalar dependencias**  
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+4. **Ejecutar migraciones**  
+   ```sh
+   python manage.py migrate
+   ```
+
+5. **Verificar instalación**
+   ```sh
+   python verificar_instalacion.py
+   ```
+
+6. **Ejecutar servidor**
+   ```sh
+   python manage.py runserver
+   ```
+   
+   O en Windows usar el script:
+   ```cmd
+   run.bat
+   ```
+
+### Acceder a la aplicación:
+
+- **Aplicación web:** http://127.0.0.1:8000/
+- **Swagger UI (APIs):** http://127.0.0.1:8000/api/docs/
+- **Admin Panel:** http://127.0.0.1:8000/admin/
+
+### Ejecutar pruebas:
+
+```sh
+# Script de pruebas completo
+python tests/test_apis_mock_completo.py
+
+# Pruebas unitarias
+python manage.py test
+```
+7. **Iniciar el servidor de desarrollo**  
+   ```sh
+   python manage.py runserver
+   ```
+8. **Acceder a la aplicación**  
+   - Navegar a `http://127.0.0.1:8000/` en un navegador web.
+
+## Notas
+
+- Asegurarse de tener Docker y Docker Compose instalados si se va a utilizar la funcionalidad de Docker.
+- Revisar la documentación de cada herramienta y librería utilizada para más detalles sobre su uso y configuración.
+
+# Configuración
+-Variables principales en Main/settings.py.
+-Configuración de correo para notificaciones y recuperación de contraseña.
+-Configuración de autenticación social en la sección SOCIALACCOUNT_PROVIDERS.
+
+# Notas
+- El modelo de usuario personalizado requiere que AUTH_USER_MODEL = 'administracion.Usuario' esté definido antes de la primera migración.
+- Las rutas principales están definidas en Main/urls.py.
+- El entorno incluye scripts para facilitar el desarrollo y despliegue (run.bat, makemigrations.bat, etc.).

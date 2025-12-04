@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mis Pedidos{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'css/apps/modulos/pedidos/listar_pedidos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>Mis Pedidos</h1>
+        <p>Consulta el estado de tus compras y haz seguimiento en tiempo real.</p>
+    </div>
+
+    <div class="filters-bar">
+        <a href="{% url 'pedidos:listar_pedidos' %}" class="filter-pill {% if not estado_solicitado %}active{% endif %}">
+            Todos
+            <span class="pill-count">{{ total_pedidos }}</span>
+        </a>
+        {% for estado in filtros_estado %}
+            <a href="?estado={{ estado.clave }}" class="filter-pill {% if estado_solicitado == estado.clave %}active{% endif %}">
+                {{ estado.etiqueta }}
+                <span class="pill-count">{{ estado.cantidad }}</span>
+            </a>
+        {% endfor %}
+    </div>
+
+    <div class="results-summary">
+        Mostrando <strong>{{ pedidos|length }}</strong> de <strong>{{ total_pedidos }}</strong> pedidos
+        {% if etiqueta_estado %}
+            · Estado: <strong>{{ etiqueta_estado }}</strong>
+        {% endif %}
+    </div>
+
+    <div class="pedidos-list">
+        {% for pedido in pedidos %}
+            <div class="pedido-card">
+                <div class="card-header">
+                    <h2>Pedido #{{ pedido.pk }}</h2>
+                    <span class="fecha">{{ pedido.creado_en|date:"d/m/Y H:i" }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="info-item">
+                        <span class="label">Estado</span>
+                        <span class="value">
+                            <span class="estado {{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Total</span>
+                        <span class="value">$ {{ pedido.total|floatformat:2 }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Productos</span>
+                        <span class="value">{{ pedido.detalles.count }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Cliente</span>
+                        <span class="value">{{ pedido.usuario.get_full_name|default:pedido.usuario.username }}</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span class="footer-note">Actualizado el {{ pedido.creado_en|date:"d \d\e F, H:i" }}</span>
+                    <a href="#" class="btn-detalle">
+                        Ver detalles
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14m-7-7 7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="no-pedidos">
+                <h2>Aún no has realizado ningún pedido.</h2>
+                <p>Explora nuestro catálogo y encuentra algo que te encante.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

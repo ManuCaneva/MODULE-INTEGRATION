@@ -1,0 +1,314 @@
+openapi: 3.1.0
+info:
+  title: Portal de Compras - API 
+  version: 1.0.0
+  summary: API del subsistema Portal de Compras (sin pagos) para catálogo, carrito, checkout, pedidos y webhooks.
+  description: |
+    Este contrato cubre los endpoints los **webhooks entrantes** desde Logística y Stock.
+    El portal coordina reserva/liberación de stock y estado del envío con servicios externos.
+    Autenticación principal con JWT (Bearer).
+  contact: 
+    name: PUPI'S DEVELOPERS (grupo 4)
+    email: emazaracho7@gmail.com
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Desarrollo local (Django + DRF)
+
+
+tags:
+  - name: Auth
+    description: Intercambio de code → JWT, refresh y consulta de identidad/roles.
+  - name: Webhooks - Envios
+    description: Recepción de eventos de logística sobre estados de envío.
+  - name: Webhooks - Stock
+    description: Recepción de eventos de stock (no implementado aún).
+
+paths:
+  /autenticacion/intercambiar-code:
+    post:
+      tags: [Auth]
+      summary: Intercambiar un code por tokens (JWT y refresh)
+      description: |
+        Intercambia un **code** válido (emitido por el Portal) por un **access_token** (JWT) y un **refresh_token**.
+        No requiere autenticación previa.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  description: Código de autorización de un solo uso.
+                  example: "AUTHCODE_8fe2c1..."
+
+            examples:
+              default:
+                value:
+                  code: "AUTHCODE_8fe2c1..."
+
+      responses:
+        "200":
+          description: Tokens emitidos correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: JWT firmado (Bearer).
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  refresh_token:
+                    type: string
+                    description: Token de renovación.
+                    example: "rfs_2d1f6a..."
+                  expires_in:
+                    type: integer
+                    description: Segundos de validez del access_token.
+                    example: 3600
+                  token_type:
+                    type: string
+                    example: "Bearer"
+        "400":
+          description: Code inválido o expirado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: "invalid_grant" }
+                  detalle: { type: string, example: "El code provisto es inválido o ya fue usado." }
+
+  /autenticacion/refresh:
+    post:
+      tags: [Auth]
+      summary: Refrescar el access_token usando un refresh_token
+      description: Obtiene un nuevo **access_token (JWT)** (y opcionalmente un nuevo refresh) a partir de un **refresh_token** válido.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+                  example: "rfs_2d1f6a..."
+      responses:
+        "200":
+          description: Token refrescado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  refresh_token:
+                    type: string
+                    description: Puede rotar o mantenerse igual según política.
+                    example: "rfs_2d1f6a..."
+                  expires_in:
+                    type: integer
+                    example: 3600
+                  token_type:
+                    type: string
+                    example: "Bearer"
+        "400":
+          description: Refresh inválido o expirado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: "invalid_token" }
+                  detalle: { type: string, example: "Refresh token expirado o revocado." }
+
+  /autenticacion/identidad:
+    get:
+      tags: [Auth]
+      summary: Obtener identidad y roles del dueño del JWT (filtrable por subsistema)
+      description: |
+        Retorna la identidad (claims) y **roles** asociados al usuario del **JWT** provisto.
+        Usar el header `Authorization: Bearer <token>`.
+        Permite **filtrar por subsistema** con `subsistema` (`stock` o `ventas`) para recibir solo los roles de ese ámbito.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          description: Portador del token JWT en formato `Bearer <token>`.
+          schema:
+            type: string
+            example: "Bearer eyJhbGciOiJIUzI1NiIs..."
+        - in: query
+          name: subsistema
+          required: false
+          schema:
+            type: string
+            enum: [stock, ventas]
+          description: Filtra los roles a un subsistema específico.
+      responses:
+        "200":
+          description: Identidad obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuarioId:
+                    type: string
+                    example: "USR-789"
+                  email:
+                    type: string
+                    format: email
+                    example: "ana@example.com"
+                  nombre:
+                    type: string
+                    example: "Ana Gómez"
+                  subsistema:
+                    type: string
+                    description: Subsistema solicitado (si se filtró).
+                    example: "stock"
+                  roles:
+                    type: array
+                    description: Roles efectivos (filtrados si se pasó `subsistema`).
+                    items:
+                      type: string
+                    example: ["stock:gestor", "stock:admin"]
+                  todosLosRoles:
+                    type: array
+                    description: Solo presente si NO se filtró por `subsistema`. Lista completa de roles por ámbito.
+                    items:
+                      type: string
+                    example: ["stock:gestor", "ventas:analista"]
+        "401":
+          description: No autorizado (Bearer faltante o inválido)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: "unauthorized" }
+                  detalle: { type: string, example: "Token inválido o expirado." }
+
+
+
+
+
+
+
+  /webhooks/envios:
+    post:
+      tags:
+        - Webhooks - Envios
+      summary: Recibir evento de actualización de envío
+      description: |
+        La empresa de logística envía este evento al portal para
+        actualizar el estado de un pedido en la base de datos.
+
+        ### Flujo de estados (`estadoEnvio`)
+        1. `preparando` → logística recibe el pedido.
+        2. `en_transito` → paquete salió a reparto.
+        3. `entregado` → cliente lo recibió (final).
+        4. `fallido` → no se pudo entregar (final).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pedidoId, estadoEnvio]
+              properties:
+                pedidoId:
+                  type: string
+                  description: ID interno del pedido en el portal
+                  example: "PED-12345"
+                referenciaExterna:
+                  type: string
+                  description: ID que envía la empresa de logística
+                  example: "LOGI-999"
+                estadoEnvio:
+                  type: string
+                  description: Estado actual reportado por logística
+                  enum: [preparando, en_transito, entregado, fallido]
+                  example: "en_transito"
+                actualizadoEn:
+                  type: string
+                  format: date-time
+                  description: Fecha y hora del evento
+                  example: "2025-09-16T20:05:00Z"
+      responses:
+        "200":
+          description: Evento procesado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pedidoId:
+                    type: string
+                    example: "PED-12345"
+                  estadoEnvio:
+                    type: string
+                    example: "en_transito"
+                  referenciaExterna:
+                    type: string
+                    example: "LOGI-999"
+                  actualizadoEn:
+                    type: string
+                    format: date-time
+                    example: "2025-09-16T20:05:00Z"
+        "400":
+          description: Error en la petición
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Bad Request"
+                  detalle:
+                    type: string
+                    example: "El campo pedidoId es requerido"
+
+  /webhook/stock/reserva-expirada:
+      post:
+        tags: [Webhooks - Stock]
+        summary: Webhook de reserva expirada (liberar en portal)
+        description: |
+          El proveedor de stock notifica que venció la reserva.
+          El portal debe marcar la reserva como EXPIRED y avisar al usuario/limpiar el carrito.
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [reservaId,pedidoId, expired_at]
+                properties:
+                  reservaId: { type: string, format: uuid, example: "9b7b2a7c-7f65-4d0e-9b6a-3a0b9f1c1111" }
+                  pedidoId: { type: string, example: "PED-12345" }
+                  expired_at: { type: string, format: date-time, example: "2025-09-10T13:25:00Z" }
+                  motivo: { type: string, example: "TTL_EXPIRED" }
+        responses:
+          "200": 
+            description: Webhook recibido y procesado
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    processed: { type: boolean, example: true }
+                    reservaId: { type: string }
+          "400":  
+            description: Payload inválido
+
+
+

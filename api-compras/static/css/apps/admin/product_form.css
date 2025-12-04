@@ -1,0 +1,63 @@
+.form-section {
+    margin-bottom: 1em;
+}
+.form-section label {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+.variant-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.variant-card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 1rem;
+    width: 250px;
+    position: relative;
+}
+
+.color-options, .talle-options {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.color-option {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+.color-option.selected {
+    border-color: #000;
+}
+
+.talle-option {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.talle-option.selected {
+    border-color: #000;
+    background: #f0f0f0;
+}
+
+.variant-card .remove-card {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #d00;
+}

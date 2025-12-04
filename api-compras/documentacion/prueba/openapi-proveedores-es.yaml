@@ -1,0 +1,271 @@
+openapi: 3.1.0
+info:
+  title: Integraciones del Portal - Proveedores Externos (ES, inline)
+  version: 1.0.0
+  summary: Contratos que el Portal consume (Stock y Logística), sin components.
+servers:
+  - url: http://localhost:8001/api/v1
+    description: Stock - Dev
+  - url: https://stock.example.com/api/v1
+    description: Stock - Prod
+  - url: http://localhost:8002/api/v1
+    description: Logística - Dev
+  - url: https://logistica.example.com/api/v1
+    description: Logística - Prod
+tags:
+  - name: Stock
+  - name: Logística
+paths:
+  /stock/reservas:
+    post:
+      tags: [Stock]
+      summary: Crear reserva de stock
+      parameters:
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [product_id, quantity]
+                    properties:
+                      product_id: { type: string, format: uuid }
+                      quantity: { type: integer, minimum: 1 }
+                ttl_minutos: { type: integer, example: 30 }
+                referencia: { type: string }
+            example:
+              items: [{ product_id: "11111111-1111-1111-1111-111111111111", quantity: 2 }]
+              ttl_minutos: 30
+              referencia: "pedido-abc"
+      responses:
+        '201':
+          description: Reserva creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reserva_id: { type: string, format: uuid }
+                  estado: { type: string, example: activa }
+                  vence_en: { type: string, format: date-time }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        product_id: { type: string, format: uuid }
+                        reservado: { type: integer }
+                        disponible: { type: integer }
+        '401': { description: No autorizado }
+  /stock/reservas/{reservaId}:
+    delete:
+      tags: [Stock]
+      summary: Liberar reserva
+      parameters:
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: path
+          name: reservaId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Reserva liberada }
+        '404': { description: No encontrado }
+  /stock/productos:
+    get:
+      tags: [Stock]
+      summary: Listar productos (origen catálogo)
+      parameters:
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: categoria
+          schema: { type: string }
+      responses:
+        '200':
+          description: Productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string, format: uuid }
+                    sku: { type: string }
+                    nombre: { type: string }
+                    descripcion: { type: string }
+                    precio:
+                      type: object
+                      properties:
+                        currency: { type: string, example: ARS }
+                        amount: { type: number, format: float }
+                    disponible: { type: integer }
+                    reservado: { type: integer }
+                    atributos: { type: object, additionalProperties: true }
+  /stock/productos/{productoId}:
+    get:
+      tags: [Stock]
+      summary: Detalle de producto
+      parameters:
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: path
+          name: productoId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Producto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  sku: { type: string }
+                  nombre: { type: string }
+                  descripcion: { type: string }
+                  precio:
+                    type: object
+                    properties:
+                      currency: { type: string, example: ARS }
+                      amount: { type: number, format: float }
+                  disponible: { type: integer }
+                  reservado: { type: integer }
+                  atributos: { type: object, additionalProperties: true }
+        '404': { description: No encontrado }
+
+  /logistica/cotizaciones:
+    post:
+      tags: [Logística]
+      summary: Cotizar envío
+      parameters:
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [direccion, carrito_id]
+              properties:
+                carrito_id: { type: string, format: uuid }
+                direccion:
+                  type: object
+                  properties:
+                    ciudad: { type: string }
+                    provincia: { type: string }
+                    codigo_postal: { type: string }
+                    pais: { type: string, example: AR }
+                dimensiones:
+                  type: object
+                  properties:
+                    peso_kg: { type: number }
+                    alto_cm: { type: number }
+                    ancho_cm: { type: number }
+                    largo_cm: { type: number }
+      responses:
+        '200':
+          description: Opciones de envío
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    carrier: { type: string }
+                    servicio: { type: string }
+                    eta_dias: { type: integer }
+                    precio:
+                      type: object
+                      properties:
+                        currency: { type: string }
+                        amount: { type: number, format: float }
+        '401': { description: No autorizado }
+  /logistica/envios:
+    post:
+      tags: [Logística]
+      summary: Crear envío
+      parameters:
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pedido_id, opcion_envio_id, direccion_id]
+              properties:
+                pedido_id: { type: string, format: uuid }
+                opcion_envio_id: { type: string }
+                direccion_id: { type: string, format: uuid }
+                observaciones: { type: string, nullable: true }
+      responses:
+        '201':
+          description: Envío creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracking_code: { type: string }
+                  etiqueta_url: { type: string, format: uri }
+                  carrier: { type: string }
+                  estado: { type: string, example: creado }
+        '401': { description: No autorizado }
+  /logistica/envios/{trackingCode}:
+    get:
+      tags: [Logística]
+      summary: Consultar tracking
+      parameters:
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: path
+          name: trackingCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Eventos de tracking
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code: { type: string }
+                    descripcion: { type: string }
+                    at: { type: string, format: date-time }
+                    ubicacion: { type: string, nullable: true }
+        '404': { description: No encontrado }

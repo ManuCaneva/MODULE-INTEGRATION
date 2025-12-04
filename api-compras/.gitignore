@@ -1,11 +1,20 @@
-# Ignorar la carpeta .vs de Visual Studio
-.vs/
+# Saco el entorno virtual
+/venv/
+/media/
+/pruebas/
+/prueba/
 
-# Archivos binarios y compilados
-bin/
-obj/
 
-# Archivos de usuario
-*.user
-*.suo
-*.cache
+*.sqlite3
+*.pyc
+__pycache__/
+# entornos virtuales
+.venv/
+venv/
+ENV/
+.venvee/
+
+logs/*.log
+logs/*.log.*
+logs/*.gz
+notas.txt

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Mis Pedidos
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .pedidos-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .pedido-card {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.07);
+        border: 1px solid #eee;
+    }
+
+    .pedido-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .pedido-id {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .pedido-fecha {
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .estado-badge {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+
+    .estado-pendiente { background: #fff3cd; color: #856404; }
+    .estado-enviado { background: #d1ecf1; color: #0c5460; }
+    .estado-entregado { background: #d4edda; color: #155724; }
+    .estado-cancelado { background: #f8d7da; color: #721c24; }
+
+    .pedido-items {
+        margin-top: 15px;
+    }
+
+    .pedido-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 0.95rem;
+    }
+
+    .pedido-total {
+        margin-top: 20px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .no-pedidos {
+        margin-top: 60px;
+        text-align: center;
+        font-size: 1.3rem;
+        color: #777;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="pedidos-container">
+
+    <h2 style="margin-bottom: 25px; font-weight:600;">Mis Pedidos</h2>
+
+    {% if pedidos and pedidos|length > 0 %}
+
+        {% for pedido in pedidos %}
+
+        <div class="pedido-card">
+            
+            <div class="pedido-header">
+
+                <div>
+                    <div class="pedido-id">Pedido #{{ pedido.id }}</div>
+                    <div class="pedido-fecha">
+                        Realizado el {{ pedido.creado_en|date:"d/m/Y H:i" }}
+                    </div>
+                </div>
+
+                <div>
+                    {% if pedido.estado == "pendiente" %}
+                        <span class="estado-badge estado-pendiente">Pendiente</span>
+                    {% elif pedido.estado == "enviado" %}
+                        <span class="estado-badge estado-enviado">Enviado</span>
+                    {% elif pedido.estado == "entregado" %}
+                        <span class="estado-badge estado-entregado">Entregado</span>
+                    {% elif pedido.estado == "cancelado" %}
+                        <span class="estado-badge estado-cancelado">Cancelado</span>
+                    {% else %}
+                        <span class="estado-badge estado-pendiente">{{ pedido.estado }}</span>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <hr>
+
+            <div>
+                <strong>Dirección de envío:</strong>  
+                {{ pedido.direccion_envio.calle }} — {{ pedido.direccion_envio.ciudad }} ({{ pedido.direccion_envio.cp }})
+            </div>
+
+            <div class="pedido-items">
+                <strong style="display:block; margin-bottom:5px;">Productos:</strong>
+
+                {% for item in pedido.items %}
+                <div class="pedido-item">
+                    <span>{{ item.nombre }} (x{{ item.cantidad }})</span>
+                    <span>${{ item.subtotal }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="pedido-total">
+                Total: ${{ pedido.total }}
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="no-pedidos">
+            No tenés pedidos realizados todavía.
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

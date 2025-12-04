@@ -1,0 +1,135 @@
+<!-- sidebar-admin.html -->
+{% load static %}
+
+{# ====== URLS SEGURAS (no rompen si no existen) ====== #}
+{% url 'pedidos_admin' as url_pedidos_admin %}
+{% url 'carritos_admin' as url_carritos_admin %}
+
+{% url 'producto_list' as url_producto_list %}
+{% url 'producto_create' as url_producto_create %}
+
+{% url 'categoria_list' as url_categoria_list %}
+{% url 'categoria_create' as url_categoria_create %}
+
+{% url 'promocion_list' as url_promocion_list %}
+{% url 'promocion_create' as url_promocion_create %}
+
+{% url 'inventario_list' as url_inventario_list %}
+{% url 'stock_alert' as url_stock_alert %}
+
+{% url 'gastos_list' as url_gastos_list %}
+{% url 'categorias_list' as url_categorias_list %}
+{% url 'estado_resultados' as url_estado_resultados %}
+
+<style>
+  /* Sidebar Styles */
+  .sidebar {
+    width: 240px;
+    background-color: white;
+    border-right: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    overflow-y: auto;
+    position: relative;
+    z-index: 100;
+    height: 100vh;
+  }
+  .sidebar-header {
+    padding: 10px 5px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .logo { height: 45px; }
+  .sidebar-menu { padding: 10px 0; }
+
+  .menu-item {
+    display: flex; align-items: center;
+    padding: 12px 16px; color: #4b5563; text-decoration: none;
+    transition: background-color 0.2s; cursor: pointer;
+  }
+  .menu-item:hover { background-color: #f3f4f6; }
+  .menu-item.active { background-color: #e6f0ff; color: #1a73e8; }
+  .menu-item i { margin-right: 12px; font-size: 20px; width: 24px; text-align: center; }
+
+  .submenu {
+    max-height: 0; overflow: hidden; transition: max-height 0.3s ease; padding-left: 20px;
+  }
+  .submenu.expanded { max-height: 300px; }
+
+  .submenu-item {
+    display: flex; align-items: center;
+    padding: 10px 16px; color: #4b5563; text-decoration: none;
+    transition: background-color 0.2s; cursor: pointer; font-size: 14px;
+  }
+  .submenu-item:hover { background-color: #f3f4f6; }
+  .submenu-item.active { background-color: #e6f0ff; color: #1a73e8; }
+
+  .has-submenu::after {
+    content: '▼'; font-size: 10px; margin-left: auto; transition: transform 0.3s ease;
+  }
+  .has-submenu.expanded::after { transform: rotate(180deg); }
+
+  .account-info {
+    padding: 16px; border-top: 1px solid #e5e7eb;
+    display: flex; align-items: center; margin-top: auto;
+    background-color: white; color: #4b5563;
+  }
+  .account-info i { margin-right: 12px; font-size: 20px; color: #6b7280; }
+
+  /* Responsive para el sidebar */
+  @media (max-width: 768px) {
+    .sidebar {
+      position: fixed; top: 0; left: 0; height: 100vh; z-index: 1020; transform: translateX(-100%);
+    }
+    .sidebar.open { transform: translateX(0); z-index: 1020; }
+  }
+</style>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div style="display: flex; align-items: center;">
+      <img src="{% static 'imagenes/logo.png' %}" alt="CS2 Investment" class="logo" />
+      <span style="font-size: 20px; font-weight: 700; margin-left: 10px; color: #000205;">MiTienda</span>
+    </div>
+  </div>
+
+  <div class="sidebar-menu">
+    {# ---- Pedidos ---- #}
+    {% with current_path=request.path %}
+    <div class="menu-item has-submenu {% if '/administracion/pedidos' in current_path %}expanded{% endif %}" onclick="toggleSubmenu(this)">
+      <i class='bx bx-cart'></i>
+      <span>Pedidos</span>
+    </div>
+    <div class="submenu {% if '/administracion/pedidos' in current_path %}expanded{% endif %}">
+      <a href="{{ url_pedidos_admin|default:'#' }}" class="submenu-item {% if request.resolver_match.url_name == 'pedidos_admin' %}active{% endif %}">
+        <span>Listado de pedidos</span>
+      </a>
+      <a href="{{ url_carritos_admin|default:'#' }}" class="submenu-item {% if request.resolver_match.url_name == 'carritos_admin' %}active{% endif %}">
+        <span>Carritos de usuarios</span>
+      </a>
+    </div>
+    {% endwith %}
+
+    {# ---- Clientes (Nuevo) ---- #}
+    {% with current_path=request.path %}
+    <div class="menu-item has-submenu {% if '/administracion/clientes' in current_path %}expanded{% endif %}" onclick="toggleSubmenu(this)">
+      <i class='bx bx-user'></i>
+      <span>Clientes</span>
+    </div>
+    <div class="submenu {% if '/administracion/clientes' in current_path %}expanded{% endif %}">
+      <a href="#" class="submenu-item">
+        <span>Listado de clientes</span>
+      </a>
+      
+      </a>
+    </div>
+    {% endwith %}
+  </div>
+</div>
+
+<script>
+  // Función para expandir/colapsar submenús
+  function toggleSubmenu(element) {
+    const submenu = element.nextElementSibling;
+    submenu.classList.toggle('expanded');
+    element.classList.toggle('expanded');
+  }
+</script>

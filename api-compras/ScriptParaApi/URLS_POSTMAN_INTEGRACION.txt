@@ -1,0 +1,480 @@
+═══════════════════════════════════════════════════════════════════════════
+  GUÍA PARA CREAR COLECCIÓN DE POSTMAN - PRUEBAS DE INTEGRACIÓN
+  Compras API ↔ Stock API ↔ Logística API
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 OBJETIVO: Probar que tus endpoints de Compras llamen correctamente a Stock y Logística
+
+📚 PASOS PREVIOS:
+──────────────────────────────────────────────────────────────────────────
+1. Crear una COLECCIÓN en Postman llamada: "Pruebas Integración Compras"
+2. Crear un ENVIRONMENT llamado: "Compras-integracion Local"
+3. En el environment, agregar estas VARIABLES:
+
+  BASE_URL_COMPRAS = http://localhost/compras/api
+  BASE_URL_STOCK = http://localhost/stock/api/v1
+  BASE_URL_LOGISTICA = http://localhost/logistica
+  TOKEN = (vacío - se llenará automáticamente)
+  PRODUCT_ID = (vacío - se llenará automáticamente)
+  PEDIDO_ID = (vacío - se llenará automáticamente)
+
+4. Activar el environment (dropdown arriba a la derecha)
+5. Agregar las siguientes requests a la colección:
+
+
+═══════════════════════════════════════════════════════════════════════════
+  REQUEST #1: Get Token Keycloak
+═══════════════════════════════════════════════════════════════════════════
+
+📌 Nombre de la request: "1. Get Token Keycloak"
+📌 Descripción: "Obtiene token de autenticación OAuth2 para las siguientes requests"
+
+Método: POST
+
+URL:
+  http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/token
+
+Headers:
+  (ninguno adicional, Content-Type se agrega automáticamente)
+
+Body → Seleccionar: x-www-form-urlencoded
+  Agregar estos campos:
+  ┌──────────────────┬───────────────────────────────────────────────┐
+  │ Key              │ Value                                         │
+  ├──────────────────┼───────────────────────────────────────────────┤
+  │ grant_type       │ password                                      │
+  │ client_id        │ grupo-04                                      │
+  │ client_secret    │ 6be1bec1-9472-499f-ab37-883d78f57829          │
+  │ username         │ usuario_test                                  │
+  │ password         │ password123                                   │
+  │ scope            │ productos:read                                │
+  └──────────────────┴───────────────────────────────────────────────┘
+
+Tests → Pegar este código JavaScript:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ var jsonData = pm.response.json();                              │
+  │ pm.environment.set("TOKEN", jsonData.access_token);             │
+  │                                                                 │
+  │ pm.test("✅ Token obtenido", function () {                      │
+  │     pm.response.to.have.status(200);                            │
+  │     pm.expect(jsonData.access_token).to.be.a('string');         │
+  │ });                                                             │
+  │                                                                 │
+  │ console.log("✅ Token guardado:", jsonData.access_token         │
+  │             .substring(0, 30) + "...");                         │
+  └─────────────────────────────────────────────────────────────────┘
+
+Resultado esperado:
+  ✅ Status: 200 OK
+  ✅ Body contiene: { "access_token": "eyJhbGc...", ... }
+  ✅ Variable TOKEN se guarda automáticamente en el environment
+
+
+═══════════════════════════════════════════════════════════════════════════
+  REQUEST #2: Listar Productos de Stock API
+═══════════════════════════════════════════════════════════════════════════
+
+📌 Nombre: "2. Listar Productos Stock (obtener PRODUCT_ID)"
+📌 Descripción: "Obtiene productos reales de Stock API y guarda el primer ID"
+
+Método: GET
+
+URL:
+  {{BASE_URL_STOCK}}/productos/
+
+Query Params:
+  ┌──────┬────────┐
+  │ Key  │ Value  │
+  ├──────┼────────┤
+  │ page │ 1      │
+  │ limit│ 10     │
+  └──────┴────────┘
+
+Headers:
+  ┌─────────────────┬───────────────────────┐
+  │ Key             │ Value                 │
+  ├─────────────────┼───────────────────────┤
+  │ Authorization   │ Bearer {{TOKEN}}      │
+  └─────────────────┴───────────────────────┘
+
+Body:
+  (ninguno)
+
+Tests → Pegar este código:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ var jsonData = pm.response.json();                              │
+  │                                                                 │
+  │ pm.test("✅ Stock API responde", function () {                  │
+  │     pm.response.to.have.status(200);                            │
+  │ });                                                             │
+  │                                                                 │
+  │ pm.test("✅ Hay productos disponibles", function () {           │
+  │     pm.expect(jsonData.data).to.be.an('array');                 │
+  │     pm.expect(jsonData.data.length).to.be.above(0);             │
+  │ });                                                             │
+  │                                                                 │
+  │ pm.test("✅ NO son datos mock", function () {                   │
+  │     pm.expect(jsonData.data[0].nombre).to.not.include("Mock");  │
+  │ });                                                             │
+  │                                                                 │
+  │ // Guardar ID del primer producto                              │
+  │ if (jsonData.data && jsonData.data.length > 0) {                │
+  │     pm.environment.set("PRODUCT_ID", jsonData.data[0].id);      │
+  │     console.log("✅ Producto guardado:", jsonData.data[0].id,   │
+  │                 "-", jsonData.data[0].nombre);                  │
+  │ }                                                               │
+  └─────────────────────────────────────────────────────────────────┘
+
+Resultado esperado:
+  ✅ Status: 200 OK
+  ✅ Body: { "data": [{ "id": "abc-123", "nombre": "...", ... }] }
+  ✅ Variable PRODUCT_ID guardada automáticamente
+
+🔍 VERIFICACIÓN DE INTEGRACIÓN:
+  En PowerShell, ejecuta:
+    docker-compose logs stock-backend | Select-String "GET /api/v1/productos"
+  
+  Deberías ver logs del Stock API recibiendo la petición.
+
+
+═══════════════════════════════════════════════════════════════════════════
+  REQUEST #3: Agregar Producto al Carrito (INTEGRACIÓN CON STOCK)
+═══════════════════════════════════════════════════════════════════════════
+
+📌 Nombre: "3. Agregar al Carrito (valida con Stock API)"
+📌 Descripción: "Tu API de Compras debe llamar a Stock para validar el producto"
+
+Método: POST
+
+URL:
+  {{BASE_URL_COMPRAS}}/shopcart/
+
+Headers:
+  ┌─────────────────┬───────────────────────┐
+  │ Key             │ Value                 │
+  ├─────────────────┼───────────────────────┤
+  │ Authorization   │ Bearer {{TOKEN}}      │
+  │ Content-Type    │ application/json      │
+  └─────────────────┴───────────────────────┘
+
+Body → Seleccionar: raw (JSON)
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ {                                                               │
+  │   "productId": "{{PRODUCT_ID}}",                                │
+  │   "cantidad": 2                                                 │
+  │ }                                                               │
+  └─────────────────────────────────────────────────────────────────┘
+
+Tests:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ var jsonData = pm.response.json();                              │
+  │                                                                 │
+  │ pm.test("✅ Producto agregado al carrito", function () {        │
+  │     pm.response.to.have.status(201);                            │
+  │     pm.expect(jsonData.items).to.be.an('array');                │
+  │ });                                                             │
+  │                                                                 │
+  │ pm.test("✅ Item tiene info de Stock API", function () {        │
+  │     pm.expect(jsonData.items[0].product).to.not.be.null;        │
+  │     pm.expect(jsonData.items[0].product.nombre).to.exist;       │
+  │ });                                                             │
+  │                                                                 │
+  │ console.log("✅ Items en carrito:", jsonData.items.length);     │
+  └─────────────────────────────────────────────────────────────────┘
+
+Resultado esperado:
+  ✅ Status: 201 Created
+  ✅ Body: { "items": [{ "product": {...}, "cantidad": 2 }], ... }
+
+🔍 VERIFICACIÓN DE INTEGRACIÓN (¡IMPORTANTE!):
+  En PowerShell, ejecuta MIENTRAS haces la request:
+    docker-compose logs -f django | Select-String "StockClient"
+  
+  Deberías ver:
+    [StockClient] GET http://nginx/stock/api/v1/productos/{{PRODUCT_ID}}
+    [StockClient] Response 200: {"nombre": "...", "precio": 1500}
+  
+  Esto CONFIRMA que tu API de Compras llamó a Stock API ✅
+
+
+═══════════════════════════════════════════════════════════════════════════
+  REQUEST #4: Ver Carrito (con datos de Stock)
+═══════════════════════════════════════════════════════════════════════════
+
+📌 Nombre: "4. Ver Carrito"
+
+Método: GET
+URL: {{BASE_URL_COMPRAS}}/shopcart/
+Headers: Authorization: Bearer {{TOKEN}}
+
+Tests:
+  var jsonData = pm.response.json();
+  pm.test("✅ Carrito tiene items", function () {
+      pm.expect(jsonData.items.length).to.be.above(0);
+  });
+  pm.test("✅ Items tienen info de producto (no null)", function () {
+      jsonData.items.forEach(function(item) {
+          pm.expect(item.product).to.not.be.null;
+      });
+  });
+
+Resultado esperado:
+  ✅ Status: 200 OK
+  ✅ Items con información completa del producto
+
+
+═══════════════════════════════════════════════════════════════════════════
+  REQUEST #5: Crear Pedido desde Carrito (RESERVA EN STOCK API)
+═══════════════════════════════════════════════════════════════════════════
+
+📌 Nombre: "5. Crear Pedido / Checkout (reserva stock)"
+📌 Descripción: "Tu API debe llamar a Stock API para reservar los productos"
+
+Método: POST
+URL: {{BASE_URL_COMPRAS}}/pedidos/desde-carrito/
+Headers: Authorization: Bearer {{TOKEN}}
+Body: (ninguno - lee del carrito automáticamente)
+
+Tests:
+  var jsonData = pm.response.json();
+  
+  pm.test("✅ Pedido creado", function () {
+      pm.response.to.have.status(201);
+      pm.expect(jsonData.id).to.be.a('number');
+  });
+  
+  pm.test("✅ Tiene ID de reserva de Stock", function () {
+      pm.expect(jsonData.reservaId || jsonData.stock_reserva_id).to.exist;
+  });
+  
+  // Guardar ID del pedido para siguiente request
+  if (jsonData.id) {
+      pm.environment.set("PEDIDO_ID", jsonData.id);
+      console.log("✅ Pedido creado con ID:", jsonData.id);
+  }
+
+Resultado esperado:
+  ✅ Status: 201 Created
+  ✅ Body: { "id": 5, "reservaId": "res-789", "estado": "pendiente", ... }
+  ✅ Variable PEDIDO_ID guardada
+
+🔍 VERIFICACIÓN DE INTEGRACIÓN:
+  docker-compose logs django | Select-String "reservar_stock"
+  docker-compose logs stock-backend | Select-String "POST /api/v1/reservas"
+  
+  Esto confirma que se reservó stock en Stock API ✅
+
+
+═══════════════════════════════════════════════════════════════════════════
+  REQUEST #6: Confirmar Pedido (CREA ENVÍO EN LOGÍSTICA API)
+═══════════════════════════════════════════════════════════════════════════
+
+📌 Nombre: "6. Confirmar Pedido (crea envío en Logística)"
+📌 Descripción: "Tu API debe llamar a Logística para crear el envío"
+
+Método: POST
+URL: {{BASE_URL_COMPRAS}}/pedidos/{{PEDIDO_ID}}/confirmar/
+Headers: Authorization: Bearer {{TOKEN}}
+
+Tests:
+  pm.test("✅ Pedido confirmado o Logística no disponible", function () {
+      // 200/201 = OK, 502 = Logística no disponible (normal)
+      pm.expect([200, 201, 502]).to.include(pm.response.code);
+  });
+  
+  if (pm.response.code === 200 || pm.response.code === 201) {
+      var jsonData = pm.response.json();
+      pm.test("✅ Tiene ID de envío de Logística", function () {
+          pm.expect(jsonData.envioId || jsonData.shippingId).to.exist;
+      });
+      console.log("✅ Envío creado con ID:", jsonData.envioId);
+  } else if (pm.response.code === 502) {
+      console.log("⚠️  Logística API no disponible (502 Bad Gateway)");
+  }
+
+Resultado esperado:
+  ✅ Status: 200 OK (si Logística está activa)
+  ⚠️  Status: 502 Bad Gateway (si Logística NO está activa - es normal)
+
+🔍 VERIFICACIÓN DE INTEGRACIÓN:
+  docker-compose logs django | Select-String "LogisticaClient"
+  docker-compose logs shipping-back | Select-String "POST"
+
+
+═══════════════════════════════════════════════════════════════════════════
+  REQUEST #7: Historial de Pedidos
+═══════════════════════════════════════════════════════════════════════════
+
+📌 Nombre: "7. Historial de Pedidos"
+
+Método: GET
+URL: {{BASE_URL_COMPRAS}}/pedidos/
+Headers: Authorization: Bearer {{TOKEN}}
+
+Tests:
+  var jsonData = pm.response.json();
+  var pedidos = Array.isArray(jsonData) ? jsonData : jsonData.results;
+  
+  pm.test("✅ Tiene pedidos", function () {
+      pm.expect(pedidos.length).to.be.above(0);
+  });
+  
+  console.log("� Total de pedidos:", pedidos.length);
+
+Resultado esperado:
+  ✅ Status: 200 OK
+  ✅ Lista de pedidos
+
+
+═══════════════════════════════════════════════════════════════════════════
+  REQUEST #8: Limpiar Carrito (para nuevas pruebas)
+═══════════════════════════════════════════════════════════════════════════
+
+📌 Nombre: "8. Limpiar Carrito"
+
+Método: DELETE
+URL: {{BASE_URL_COMPRAS}}/shopcart/clear/
+Headers: Authorization: Bearer {{TOKEN}}
+
+Tests:
+  pm.test("✅ Carrito vaciado", function () {
+      pm.response.to.have.status(204);
+  });
+
+Resultado esperado:
+  ✅ Status: 204 No Content
+
+
+═══════════════════════════════════════════════════════════════════════════
+  📊 RESUMEN: ORDEN DE EJECUCIÓN DE LAS REQUESTS
+═══════════════════════════════════════════════════════════════════════════
+
+  1. Get Token Keycloak          → Guarda TOKEN
+  2. Listar Productos Stock      → Guarda PRODUCT_ID
+  3. Agregar al Carrito          → Usa TOKEN y PRODUCT_ID, llama a Stock
+  4. Ver Carrito                 → Verifica datos de Stock
+  5. Crear Pedido (Checkout)     → Guarda PEDIDO_ID, reserva en Stock
+  6. Confirmar Pedido            → Usa PEDIDO_ID, crea envío en Logística
+  7. Historial de Pedidos        → Verifica que el pedido aparezca
+  8. Limpiar Carrito             → Para empezar de nuevo
+
+✅ PUNTOS CLAVE DE VERIFICACIÓN:
+  • Request #3: Ver logs de StockClient (valida producto)
+  • Request #5: Ver logs de reservar_stock (reserva en Stock)
+  • Request #6: Ver logs de LogisticaClient (crea envío)
+
+═══════════════════════════════════════════════════════════════════════════
+  📊 ENDPOINTS ADICIONALES - STOCK API (solo consulta)
+═══════════════════════════════════════════════════════════════════════════
+
+🔹 Listar categorías:
+   GET http://localhost/stock/api/v1/categorias
+   Headers: Authorization: Bearer {{TOKEN}}
+
+🔹 Detalle de categoría:
+   GET http://localhost/stock/api/v1/categorias/{id}
+   Headers: Authorization: Bearer {{TOKEN}}
+
+🔹 Listar reservas del usuario:
+   GET http://localhost/stock/api/v1/reservas?usuarioId=123&page=1&limit=10
+   Headers: Authorization: Bearer {{TOKEN}}
+
+🔹 Detalle de una reserva:
+   GET http://localhost/stock/api/v1/reservas/{id}?usuarioId=123
+   Headers: Authorization: Bearer {{TOKEN}}
+
+
+═══════════════════════════════════════════════════════════════════════════
+  📊 ENDPOINTS ADICIONALES - LOGÍSTICA API (solo consulta)
+═══════════════════════════════════════════════════════════════════════════
+
+🔹 Calcular costo de envío:
+   POST http://localhost/logistica/shipping/cost
+   Headers: Authorization: Bearer {{TOKEN}}
+   Body: {
+     "delivery_address": {
+       "street": "Av. Libertador 1234",
+       "city": "Resistencia",
+       "state": "Chaco",
+       "postal_code": "3500",
+       "country": "Argentina"
+     },
+     "products": [{"id": 1, "quantity": 2}],
+     "transport_type": "road"
+   }
+
+🔹 Métodos de transporte disponibles:
+   GET http://localhost/logistica/shipping/transport-methods
+   Headers: Authorization: Bearer {{TOKEN}}
+
+🔹 Listar envíos del usuario:
+   GET http://localhost/logistica/shipping?user_id=123&page=1&limit=10
+   Headers: Authorization: Bearer {{TOKEN}}
+
+🔹 Detalle de un envío:
+   GET http://localhost/logistica/shipping/{id}
+   Headers: Authorization: Bearer {{TOKEN}}
+
+🔹 Cancelar un envío:
+   POST http://localhost/logistica/shipping/{id}/cancel
+   Headers: Authorization: Bearer {{TOKEN}}
+
+
+═══════════════════════════════════════════════════════════════════════════
+  🔍 VERIFICACIÓN DE LOGS - COMANDOS ÚTILES
+═══════════════════════════════════════════════════════════════════════════
+
+📍 Ver llamadas a Stock API desde Django:
+   docker-compose logs django | Select-String "StockClient"
+
+📍 Ver llamadas a Logística API desde Django:
+   docker-compose logs django | Select-String "LogisticaClient"
+
+📍 Ver logs completos de Stock API:
+   docker-compose logs -f stock-backend
+
+📍 Ver logs completos de Logística API:
+   docker-compose logs -f shipping-back
+
+📍 Ver logs de Django (errores):
+   docker-compose logs -f django
+
+📍 Ver logs de Nginx (routing):
+   docker-compose logs -f nginx
+
+
+═══════════════════════════════════════════════════════════════════════════
+  ✅ CHECKLIST DE PRUEBAS DE INTEGRACIÓN
+═══════════════════════════════════════════════════════════════════════════
+
+□ 1. Obtener token de Keycloak
+□ 2. Listar productos de Stock API (NO mock)
+□ 3. Obtener detalle de producto de Stock
+□ 4. Agregar producto al carrito (ver logs: llama a Stock)
+□ 5. Ver carrito (productos tienen info de Stock, no null)
+□ 6. Crear pedido desde carrito (ver logs: llama a reservar_stock)
+□ 7. Verificar que pedido tiene reservaId
+□ 8. Confirmar pedido (ver logs: llama a Logística)
+□ 9. Verificar que pedido tiene envioId (si Logística está activa)
+□ 10. Ver historial de pedidos
+
+EVIDENCIAS A RECOLECTAR:
+□ Screenshots de Postman con respuestas 200/201 OK
+□ Captura de logs mostrando llamadas a Stock (StockClient)
+□ Captura de logs mostrando llamadas a Logística (LogisticaClient)
+□ Screenshot de pedido con reservaId de Stock
+□ Screenshot de pedido con envioId de Logística
+
+
+═══════════════════════════════════════════════════════════════════════════
+  📝 NOTAS IMPORTANTES
+═══════════════════════════════════════════════════════════════════════════
+
+⚠️  USE_MOCK_APIS debe estar en "false" en docker-compose.yml
+⚠️  Todos los servicios deben estar UP (docker-compose ps)
+⚠️  El error 502 en /confirmar/ es NORMAL si Logística no está disponible
+⚠️  Siempre usar IDs reales obtenidos de Stock API (paso 3)
+⚠️  El token expira, renovarlo si obtienes 401 Unauthorized
+⚠️  Los logs son la evidencia principal de integración
+
+═══════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,58 @@
+{% extends 'baseAdmin.html' %}
+{% load static %}
+
+{% block title %}Panel de Administración{% endblock %}
+
+{% block content %}
+
+{# URLs seguras (no fallan si aún no existen en urls.py) #}
+{% url 'admin_transacciones' as url_transacciones %}
+
+<!-- ====== TABLA DE ÚLTIMAS TRANSACCIONES ====== -->
+<section class="card p20">
+  <div class="card-header">
+    <h3 class="card-title">Últimas transacciones</h3>
+    <a href="{{ url_transacciones|default:'#' }}" class="btn">
+      <i class='bx bx-right-arrow-alt'></i> Ver todas
+    </a>
+  </div>
+
+  <table class="table">
+    <thead class="t-head">
+      <tr>
+        <th>ID</th>
+        <th>Usuario</th>
+        <th>Monto</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in ultimas_transacciones %}
+      <tr class="t-row">
+        <td class="t-cell">#{{ t.id }}</td>
+        <td class="t-cell">{{ t.usuario }}</td>
+        <td class="t-cell">${{ t.monto }}</td>
+        <td class="t-cell">{{ t.fecha|date:"d/m/Y H:i" }}</td>
+        <td class="t-cell">
+          {% if t.estado == 'OK' %}
+            <span class="chip ok">OK</span>
+          {% elif t.estado == 'PENDIENTE' %}
+            <span class="chip warn">Pendiente</span>
+          {% else %}
+            <span class="chip bad">{{ t.estado }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr class="t-row">
+        <td class="t-cell muted" colspan="5" style="text-align:center;">
+          No hay transacciones registradas.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% endblock %}

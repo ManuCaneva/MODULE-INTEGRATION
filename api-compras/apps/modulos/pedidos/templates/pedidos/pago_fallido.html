@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pago Rechazado{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'css/apps/modulos/pedidos/pago_status.css' %}">
+    <link rel="stylesheet" href="{% static 'css/apps/modulos/pedidos/pedidos_styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/apps/modulos/pedidos/pago_fallido.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="status-container">
+    <div class="status-card failure">  <div id="lottie-animation-failure"></div>
+        
+        <h2>Pago Rechazado</h2>
+        <p>Hubo un problema al procesar tu pago. Por favor, intentá nuevamente o contactá a tu banco.</p>
+        
+        <div class="status-buttons">
+            <a href="{% url 'pedidos:checkout' %}" class="btn btn-primary">Volver a Intentar</a>
+            <a href="{% url 'inicio' %}" class="btn btn-secondary">Volver al Inicio</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="{% static 'js/apps/modulos/pedidos/pago_fallido.js' %}"></script>
+{% endblock %}

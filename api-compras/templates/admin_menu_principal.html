@@ -1,0 +1,210 @@
+{% extends 'baseAdmin.html' %}
+{% load static %}
+
+{% block title %}Seleccionar Panel Admin{% endblock %}
+
+{% block content %}
+<style>
+  .menu-container {
+    display: grid;
+    gap: 24px;
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .menu-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .menu-header h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .menu-header p {
+    font-size: 1.05rem;
+    color: var(--muted);
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+  }
+
+  .menu-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .menu-card:hover {
+    border-color: var(--brand);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(37, 99, 235, 0.15);
+  }
+
+  .menu-card.stock:hover {
+    border-color: #10b981;
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.15);
+  }
+
+  .menu-card.logistica:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 12px 32px rgba(245, 158, 11, 0.15);
+  }
+
+  .menu-card.compras:hover {
+    border-color: #8b5cf6;
+    box-shadow: 0 12px 32px rgba(139, 92, 246, 0.15);
+  }
+
+  .menu-card-icon {
+    font-size: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    background: #f0f9ff;
+    transition: all 0.3s ease;
+  }
+
+  .menu-card.stock .menu-card-icon {
+    background: #ecfdf5;
+    color: #10b981;
+  }
+
+  .menu-card.logistica .menu-card-icon {
+    background: #fffbeb;
+    color: #f59e0b;
+  }
+
+  .menu-card.compras .menu-card-icon {
+    background: #f3f4f6;
+    color: #8b5cf6;
+  }
+
+  .menu-card:hover .menu-card-icon {
+    transform: scale(1.1);
+  }
+
+  .menu-card-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .menu-card-description {
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .menu-card-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 8px;
+  }
+
+  .menu-card.stock .menu-card-badge {
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  .menu-card.logistica .menu-card-badge {
+    background: #fffbeb;
+    color: #92400e;
+  }
+
+  .menu-card.compras .menu-card-badge {
+    background: #f3f4f6;
+    color: #6b21a8;
+  }
+
+  @media (max-width: 768px) {
+    .menu-header h1 {
+      font-size: 1.75rem;
+    }
+
+    .menu-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .menu-card {
+      padding: 24px 16px;
+    }
+
+    .menu-card-icon {
+      width: 70px;
+      height: 70px;
+      font-size: 2.5rem;
+    }
+
+    .menu-card-title {
+      font-size: 1.15rem;
+    }
+  }
+</style>
+
+<div class="menu-container">
+  <div class="menu-header">
+    <h1>Panel de Administración</h1>
+    <p>Selecciona el módulo que deseas administrar</p>
+  </div>
+
+  <div class="menu-grid">
+    <!-- Card Stock -->
+    <a href="{% url 'admin_stock' %}" class="menu-card stock">
+      <div class="menu-card-icon">
+        <i class='bx bx-cube'></i>
+      </div>
+      <h2 class="menu-card-title">Stock</h2>
+      <p class="menu-card-description">Gestiona inventario, productos y niveles de existencias</p>
+      <span class="menu-card-badge">Administrar</span>
+    </a>
+
+    <!-- Card Logística -->
+    <a href="{% url 'admin_logistica' %}" class="menu-card logistica">
+      <div class="menu-card-icon">
+        <i class='bx bx-package'></i>
+      </div>
+      <h2 class="menu-card-title">Logística</h2>
+      <p class="menu-card-description">Controla entregas, envíos y distribución de productos</p>
+      <span class="menu-card-badge">Administrar</span>
+    </a>
+
+    <!-- Card Compras -->
+    <a href="{% url 'admin_compras' %}" class="menu-card compras">
+      <div class="menu-card-icon">
+        <i class='bx bx-cart-alt'></i>
+      </div>
+      <h2 class="menu-card-title">Compras</h2>
+      <p class="menu-card-description">Gestiona órdenes de compra, proveedores y adquisiciones</p>
+      <span class="menu-card-badge">Administrar</span>
+    </a>
+  </div>
+</div>
+{% endblock %}

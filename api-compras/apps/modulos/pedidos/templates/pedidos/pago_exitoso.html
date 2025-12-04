@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pago Aprobado{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'css/apps/modulos/pedidos/pago_status.css' %}">
+    <link rel="stylesheet" href="{% static 'css/apps/modulos/pedidos/pedidos_styles.css' %}">
+    <link rel="stylesheet" href="{% static  'css/apps/modulos/pedidos/pago_exitoso.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="status-container">
+    <div class="status-card success">
+        
+        <div id="lottie-animation"></div>
+        
+        <h2>¡Pago Aprobado!</h2>
+        <p>Tu compra ha sido procesada con éxito. Podés ver el estado de tu pedido en cualquier momento.</p>
+        
+        <div class="status-buttons">
+    <a href="{% url 'pedidos:mis_pedidos' %}" class="btn btn-secondary">Ver Mis Pedidos</a>
+    <a href="{% url 'inicio' %}" class="btn btn-primary">Seguir Comprando</a>
+</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/apps/modulos/pedidos/pago_exitoso.js' %}"></script>
+{% endblock %}

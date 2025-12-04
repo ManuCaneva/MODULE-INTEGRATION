@@ -1,0 +1,150 @@
+{% load static %}
+
+{# Intentamos resolver la URL 'inicio' sin romper si no existe #}
+{% url 'inicio' as url_inicio %}
+
+<style>
+  /* ===== Barra superior del panel ===== */
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .header-info-group {
+    display: flex;
+    align-items: center;
+  }
+
+  .sidebar-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #4b5563;
+    display: none;
+    margin-right: 15px;
+  }
+
+  .page-title-nav {
+    font-weight: 600;
+    font-size: 18px;
+    color: #111827;
+    margin-left: 10px;
+  }
+
+  .role-badge-nav {
+    background-color: #f3f4f6;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #4b5563;
+    margin-left: 10px;
+  }
+
+  .header-action-list {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .action-btn {
+    text-decoration: none;
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+  }
+
+  .action-btn i {
+    font-size: 25px;
+  }
+
+  .action-btn:hover {
+    background-color: #f3f4f6;
+  }
+
+  .action-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: #ef4444;
+    color: white;
+    font-size: 10px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+  }
+
+  .user-avatar-inline {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #d0e2ff;
+    color: #1a73e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+
+  .user-avatar-inline i {
+    font-size: 24px; /* Aumenta este valor, ej: 24px */
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 768px) {
+    .sidebar-toggle-btn {
+      display: block;
+    }
+    .page-title-nav {
+      font-size: 16px;
+    }
+    .role-badge-nav {
+      font-size: 12px;
+    }
+  }
+</style>
+
+<div class="app-header">
+  <!-- IZQUIERDA -->
+  <div class="header-info-group">
+    <button class="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Abrir menú lateral">
+      <i class='bx bx-menu'></i>
+    </button>
+
+    <div class="page-title-nav">{{ titulo_nav|default:"Panel Admin" }}</div>
+    <span class="role-badge-nav">{{ rol_nav|default:"Administrador" }}</span>
+  </div>
+
+  <!-- DERECHA -->
+  <div class="header-action-list">
+    <!-- Botón home -->
+    <a href="{{ url_inicio|default:'/' }}" class="action-btn" title="Ir al inicio">
+      <i class='bx bx-home'></i>
+    </a>
+
+    <!-- Avatar del usuario -->
+    <div class="user-avatar-inline" title="Usuario">
+      <i class='bx bx-user'></i>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,311 @@
+═══════════════════════════════════════════════════════════════════════════════
+  🚀 GUÍA DE URLs PARA PROBAR LA API DE COMPRAS EN POSTMAN
+═══════════════════════════════════════════════════════════════════════════════
+
+📌 IMPORTANTE: Ejecuta PRIMERO "Get Keycloak Token" para autenticarte.
+   El token se guarda automáticamente en {{TOKEN}} y expira en 5 minutos.
+
+═══════════════════════════════════════════════════════════════════════════════
+🔐 PASO 1: AUTENTICACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+▶ Get Keycloak Token ⭐ (HACER PRIMERO)
+   POST http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/token
+   
+   Body (x-www-form-urlencoded):
+   - client_id: grupo-04
+   - client_secret: 6be1bec1-9472-499f-ab37-883d78f57829
+   - grant_type: client_credentials
+   - scope: productos:read
+   
+   ✅ Resultado: Token guardado en {{TOKEN}} automáticamente
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📦 PASO 2: PRODUCTOS
+═══════════════════════════════════════════════════════════════════════════════
+
+▶ Listar todos los productos
+   GET http://localhost/compras/api/product/
+
+▶ Ver producto específico (cambiar el 1 por el ID que quieras)
+   GET http://localhost/compras/api/product/1/
+
+
+═══════════════════════════════════════════════════════════════════════════════
+🛒 PASO 3: CARRITO (Flujo Completo)
+═══════════════════════════════════════════════════════════════════════════════
+
+▶ Ver carrito vacío (inicio)
+   GET http://localhost/compras/api/shopcart/
+
+▶ Agregar producto al carrito
+   POST http://localhost/compras/api/shopcart/
+   
+   Body (JSON):
+   {
+     "productId": 1,
+     "quantity": 2
+   }
+
+▶ Agregar otro producto
+   POST http://localhost/compras/api/shopcart/
+   
+   Body (JSON):
+   {
+     "productId": 2,
+     "quantity": 1
+   }
+
+▶ Ver carrito con items
+   GET http://localhost/compras/api/shopcart/
+
+▶ Actualizar cantidad de un producto (cambiar el 1 por el productId)
+   PUT http://localhost/compras/api/shopcart/1/
+   
+   Body (JSON):
+   {
+     "quantity": 5
+   }
+
+▶ Eliminar un producto específico del carrito (cambiar el 1 por el productId)
+   DELETE http://localhost/compras/api/shopcart/1/
+
+▶ Vaciar carrito completamente
+   DELETE http://localhost/compras/api/shopcart/clear/
+
+▶ Hacer CHECKOUT (crear pedido desde carrito) ⭐
+   POST http://localhost/compras/api/shopcart/checkout
+   
+   Body (JSON):
+   {
+     "direccion_envio": "Calle Falsa 123, Resistencia, Chaco, Argentina",
+     "metodo_pago": "tarjeta",
+     "tipo_transporte": "domicilio"
+   }
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 PASO 4: HISTORIAL DE PEDIDOS
+═══════════════════════════════════════════════════════════════════════════════
+
+▶ Ver historial completo de pedidos
+   GET http://localhost/compras/api/shopcart/history
+
+▶ Ver detalle del pedido (cambiar el 1 por el ID del pedido)
+   GET http://localhost/compras/api/shopcart/history/1
+
+▶ Cancelar pedido (cambiar el 1 por el ID del pedido)
+   DELETE http://localhost/compras/api/shopcart/history/1
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📦 PASO 5: GESTIÓN AVANZADA DE PEDIDOS (API de Pedidos)
+═══════════════════════════════════════════════════════════════════════════════
+
+▶ Listar todos los pedidos
+   GET http://localhost/compras/api/pedidos/
+
+▶ Ver detalle completo de un pedido (cambiar el 1 por el ID del pedido)
+   GET http://localhost/compras/api/pedidos/1/
+
+▶ Crear pedido manualmente (sin usar carrito)
+   POST http://localhost/compras/api/pedidos/
+   
+   Body (JSON):
+   {
+     "direccion_envio": {
+       "nombre_receptor": "Juan Pérez",
+       "calle": "Av. 9 de Julio 123",
+       "ciudad": "Resistencia",
+       "provincia": "Chaco",
+       "codigo_postal": "3500",
+       "pais": "Argentina",
+       "telefono": "+54 362 4123456"
+     },
+     "tipo_transporte": "domicilio",
+     "detalles": [
+       {
+         "producto_id": 1,
+         "nombre_producto": "Laptop Dell XPS 13",
+         "cantidad": 1,
+         "precio_unitario": 1299.99
+       },
+       {
+         "producto_id": 2,
+         "nombre_producto": "Mouse Logitech",
+         "cantidad": 2,
+         "precio_unitario": 25.50
+       }
+     ]
+   }
+
+▶ Confirmar pedido (⚠️ Requiere API de Logística - cambiar el 1 por el ID del pedido)
+   POST http://localhost/compras/api/pedidos/1/confirmar/
+   
+   Body (JSON):
+   {
+     "tipo_transporte": "road"
+   }
+
+▶ Cancelar pedido (cambiar el 1 por el ID del pedido)
+   POST http://localhost/compras/api/pedidos/1/cancelar/
+
+▶ Crear tracking para pedido (⚠️ Requiere API de Logística - cambiar el 1 por el ID)
+   POST http://localhost/compras/api/pedidos/1/tracking/
+   
+   Body (JSON):
+   {
+     "tipo_transporte": "road"
+   }
+
+▶ Ver tracking del envío (cambiar el 1 por el ID del pedido)
+   GET http://localhost/compras/api/pedidos/1/tracking/
+
+▶ Ver historial de pedidos (alias de /api/shopcart/history)
+   GET http://localhost/compras/api/pedidos/history/
+
+▶ Ver detalle de pedido desde historial (cambiar el 1 por el ID del pedido)
+   GET http://localhost/compras/api/pedidos/1/history-detail/
+
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 FLUJO RÁPIDO DE PRUEBA (Orden Recomendado)
+═══════════════════════════════════════════════════════════════════════════════
+
+1.  POST   Get Keycloak Token (autenticación)
+2.  GET    List products (ver productos disponibles)
+3.  POST   Add item to cart (productId: 1, quantity: 2)
+4.  POST   Add item to cart (productId: 2, quantity: 1)
+5.  GET    Get cart (verificar carrito)
+6.  POST   Checkout (crear pedido)
+7.  GET    Order history (ver pedido creado)
+8.  GET    Get order by id (detalle del pedido)
+9.  POST   Confirm order (⚠️ SOLO si tienes API de Logística)
+10. GET    Get tracking (⚠️ SOLO si confirmaste el pedido)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ NOTAS IMPORTANTES
+═══════════════════════════════════════════════════════════════════════════════
+
+🔸 Autenticación:
+   - El token expira en 5 minutos
+   - Si recibes error 401, vuelve a ejecutar "Get Keycloak Token"
+   - El token se guarda automáticamente en {{TOKEN}}
+
+🔸 Headers necesarios:
+   - Authorization: Bearer {{TOKEN}}
+   - Content-Type: application/json
+
+🔸 Modo Mock (USE_MOCK_APIS=true):
+   - NO requiere APIs de Stock ni Logística
+   - Productos con precios ficticios
+   - NO usar endpoints /confirmar/ ni /tracking/
+
+🔸 IDs en URLs:
+   - Cambiar el número según corresponda
+   - Ejemplo: /api/shopcart/1/ → cambiar 1 por el productId deseado
+
+🔸 Docker:
+   - Verifica que esté corriendo: docker compose ps
+   - Si cambias configuración: docker compose restart django
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 RESUMEN DE ENDPOINTS POR CATEGORÍA
+═══════════════════════════════════════════════════════════════════════════════
+
+AUTENTICACIÓN:
+  POST   http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/token
+
+PRODUCTOS:
+  GET    http://localhost/compras/api/product/
+  GET    http://localhost/compras/api/product/{id}/
+
+CARRITO:
+  GET    http://localhost/compras/api/shopcart/
+  POST   http://localhost/compras/api/shopcart/
+  PUT    http://localhost/compras/api/shopcart/{productId}/
+  DELETE http://localhost/compras/api/shopcart/{productId}/
+  DELETE http://localhost/compras/api/shopcart/clear/
+  POST   http://localhost/compras/api/shopcart/checkout
+
+HISTORIAL:
+  GET    http://localhost/compras/api/shopcart/history
+  GET    http://localhost/compras/api/shopcart/history/{id}
+  DELETE http://localhost/compras/api/shopcart/history/{id}
+
+PEDIDOS:
+  GET    http://localhost/compras/api/pedidos/
+  POST   http://localhost/compras/api/pedidos/
+  GET    http://localhost/compras/api/pedidos/{id}/
+  POST   http://localhost/compras/api/pedidos/{id}/confirmar/
+  POST   http://localhost/compras/api/pedidos/{id}/cancelar/
+  POST   http://localhost/compras/api/pedidos/{id}/tracking/
+  GET    http://localhost/compras/api/pedidos/{id}/tracking/
+  GET    http://localhost/compras/api/pedidos/history/
+  GET    http://localhost/compras/api/pedidos/{id}/history-detail/
+
+
+═══════════════════════════════════════════════════════════════════════════════
+💡 TIPS PARA POSTMAN
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Variables de colección:
+   - {{BASE_URL_COMPRAS}} = http://localhost/compras
+   - {{TOKEN}} = (se autocompleta al ejecutar Get Keycloak Token)
+
+✅ Configuración de Auth:
+   - A nivel de colección: Bearer Token con {{TOKEN}}
+   - No necesitas configurar auth en cada request individual
+
+✅ Para cambiar Body JSON:
+   - Pestaña "Body"
+   - Seleccionar "raw"
+   - Seleccionar "JSON" en el dropdown
+
+✅ Guardar respuestas:
+   - Click en "Save Response" para comparar resultados
+
+✅ Importar colección:
+   - File → Import → Seleccionar portal-compras.postman_collection.json
+
+
+═══════════════════════════════════════════════════════════════════════════════
+🆘 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+❌ Error 401 Unauthorized:
+   → Volver a ejecutar "Get Keycloak Token" (el token expiró)
+
+❌ Error 404 Not Found:
+   → Verificar que la URL esté correcta (con o sin / al final)
+   → Verificar que el ID exista
+
+❌ Error 500 Internal Server Error:
+   → Revisar logs de Docker: docker compose logs django
+
+❌ Error 502 Bad Gateway (al confirmar pedido):
+   → API de Logística no está disponible
+   → Usar modo mock (USE_MOCK_APIS=true)
+   → No usar endpoints /confirmar/ ni /tracking/
+
+❌ Connection refused:
+   → Docker no está corriendo: docker compose up -d
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📞 CONTACTO Y SOPORTE
+═══════════════════════════════════════════════════════════════════════════════
+
+Si tienes dudas o problemas:
+1. Revisa los logs: docker compose logs django
+2. Verifica el estado: docker compose ps
+3. Reinicia el servicio: docker compose restart django
+4. Consulta la documentación Swagger: http://localhost/compras/api/docs/
+
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 ¡Éxitos con las pruebas!
+═══════════════════════════════════════════════════════════════════════════════

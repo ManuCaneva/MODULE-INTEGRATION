@@ -1,0 +1,211 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalizar Compra</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/apps/modulos/pedidos/checkout.css' %}">
+</head>
+<body>
+
+    <div class="checkout-card">
+        <header class="checkout-header">
+            <div class="stepper">
+                <div id="step-indicator-1" class="step">
+                    <div class="step-icon">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                         <span class="step-number">1</span>
+                    </div>
+                    <div class="step-text">
+                        <span class="step-title">Paso 1</span>
+                        <span class="step-subtitle">Envío</span>
+                    </div>
+                </div>
+
+                <div class="step-connector">
+                    <div class="connector-line-progress"></div>
+                </div>
+
+                <div id="step-indicator-2" class="step">
+                    <div class="step-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                         <span class="step-number">2</span>
+                    </div>
+                    <div class="step-text">
+                        <span class="step-title">Paso 2</span>
+                        <span class="step-subtitle">Detalles</span>
+                    </div>
+                </div>
+
+                <div class="step-connector">
+                    <div class="connector-line-progress"></div>
+                </div>
+
+                <div id="step-indicator-3" class="step">
+                    <div class="step-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                        <span class="step-number">3</span>
+                    </div>
+                    <div class="step-text">
+                        <span class="step-title">Paso 3</span>
+                        <span class="step-subtitle">Finalizar</span>
+                    </div>
+                </div>
+            </div>
+            </header>
+
+        <form>
+            <div class="checkout-grid">
+                <div class="summary-col">
+                    <h2>Resumen del Pedido</h2>
+                    <div class="summary-items"></div>
+                    <div class="totals-summary">
+                        <div class="total-row"><span>Subtotal</span><span>$ 0</span></div>
+                        <div class="total-row"><span>Envío</span><span>-</span></div>
+                        <div class="total-row grand-total"><span>Total</span><span>$ 0</span></div>
+                    </div>
+                </div>
+
+                <div class="steps-col">
+                    
+                    <div class="checkout-step" data-step="1">
+                        <h2>Selecciona un Método de Envío</h2>
+                        <div class="shipping-options">
+                            {% for tipo in tipos_envio %}
+                            <label for="tipo-envio-{{ forloop.counter }}">
+                                <input type="radio" name="tipo_envio" id="tipo-envio-{{ forloop.counter }}" value="{{ tipo.id }}" class="hidden" {% if forloop.first %}checked{% endif %}>
+                                <div class="shipping-option">
+                                    <div class="shipping-option__info">
+                                        <div class="shipping-option__title">
+                                            <span>{{ tipo.nombre }}</span>
+                                            <span>{{ tipo.costo }}</span>
+                                        </div>
+                                        <p class="shipping-option__description">{{ tipo.descripcion }}</p>
+                                        {% if tipo.dias_estimados %}
+                                        <span class="shipping-option__badge" style="background-color: #e3f2fd; color: #1976d2;">⏱️ {{ tipo.dias_estimados }} días</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </label>
+                            {% empty %}
+                            <p>No hay métodos de envío disponibles en este momento. Por favor, intenta más tarde.</p>
+                            {% endfor %}
+                        </div>
+                        <div class="step-navigation">
+                            <button type="button" class="btn btn-secondary">Cancelar</button>
+                            <button type="button" class="btn btn-next">Continuar</button>
+                        </div>
+                    </div>
+
+                    <div class="checkout-step hidden" data-step="2">
+                        <h2>Detalles de Envío y Contacto</h2>
+                        <div id="shipping-details">
+                            <h3>Dirección de Entrega</h3>
+                            <div class="form-grid">
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <label for="calle">Calle y número</label><input type="text" id="calle" name="calle" required>
+                                </div>
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <input type="text" id="departamento" name="departamento" placeholder="Departamento / Piso (Opcional)">
+                                </div>
+                                <div class="form-grid two-columns">
+                                    <div class="form-group"><label for="ciudad">Ciudad</label><input type="text" id="ciudad" name="ciudad" required></div>
+                                    <div class="form-group"><label for="provincia">Provincia / Estado</label><input type="text" id="provincia" name="provincia" required placeholder="Ej: Buenos Aires"></div>
+                                </div>
+                                <div class="form-grid two-columns">
+                                    <div class="form-group"><label for="codigo_postal">Código postal</label><input type="text" id="codigo_postal" name="codigo_postal" required placeholder="Formato A1234ABC"></div>
+                                    <div class="form-group"><label for="informacion_adicional">Referencias (opcional)</label><input type="text" id="informacion_adicional" name="informacion_adicional" placeholder="Entre calles, timbre, etc."></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="customer-info" style="margin-top: 24px;">
+                            <h3>Datos de Contacto</h3>
+                            <div class="form-grid two-columns">
+                                <div class="form-group"><label for="nombre">Nombre completo</label><input type="text" id="nombre" name="nombre" required></div>
+                                <div class="form-group"><label for="telefono">Teléfono</label><input type="tel" id="telefono" name="telefono" required></div>
+                            </div>
+                        </div>
+                        <div class="step-navigation">
+                            <button type="button" class="btn btn-secondary">Cancelar</button>
+                            <button type="button" class="btn btn-prev">Volver</button>
+                            <button type="button" class="btn btn-next">Continuar</button>
+                        </div>
+                    </div>
+
+                    <div class="checkout-step hidden" data-step="3">
+                        <div class="summary-review">
+                            <div class="summary-section">
+                                <h4>Datos de Contacto</h4>
+                                <p><strong>Nombre:</strong> <span id="summary-nombre"></span></p>
+                                <p><strong>Teléfono:</strong> <span id="summary-telefono"></span></p>
+                            </div>
+                            <div class="summary-section" id="summary-shipping-section">
+                                <h4>Enviar a</h4>
+                                <p id="summary-address-line1"></p>
+                                <p id="summary-address-line2"></p>
+                            </div>
+                            <div class="summary-section">
+                                <h4>Método de envío</h4>
+                                <p id="summary-shipping-method"></p>
+                            </div>
+                        </div>
+                        <h2>Finalizar Compra</h2>
+                        <p>Revisa que todos los datos de tu pedido y del resumen superior sean correctos antes de finalizar la compra.</p>
+
+                        <div id="order-status-card" class="order-status-card hidden">
+                            <div class="order-status-header">
+                                <div>
+                                    <h3>Estado del pedido demo</h3>
+                                    <p class="order-status-subtitle">Tu compra de prueba fue confirmada y se encuentra en proceso.</p>
+                                </div>
+                                <span class="status-badge">En proceso</span>
+                            </div>
+                            <div class="order-status-timeline">
+                                <div class="status-step status-step--completed">
+                                    <div class="status-step-icon">1</div>
+                                    <div class="status-step-content">
+                                        <h5>Pedido recibido</h5>
+                                        <p>Registramos la solicitud y generamos el número de seguimiento demo.</p>
+                                    </div>
+                                </div>
+                                <div class="status-step status-step--active">
+                                    <div class="status-step-icon">2</div>
+                                    <div class="status-step-content">
+                                        <h5>En preparación</h5>
+                                        <p>Estamos preparando el envío simulado antes de entregarlo al transportista.</p>
+                                    </div>
+                                </div>
+                                <div class="status-step">
+                                    <div class="status-step-icon">3</div>
+                                    <div class="status-step-content">
+                                        <h5>En camino</h5>
+                                        <p>Cuando salga a reparto, verás aquí la actualización final del recorrido.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-navigation">
+                            <button type="button" class="btn btn-secondary">Cancelar</button>
+                            <button type="button" class="btn btn-prev">Volver</button>
+                            <button type="submit" class="btn">Finalizar Pedido</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+        <script>
+        window.checkoutConfig = {
+            apiBase: "{{ api_base|default:'' }}",
+            checkoutUrl: "{{ checkout_endpoint|default:'/api/shopcart/checkout' }}",
+            successUrl: "{{ success_url|default:'' }}",
+            failureUrl: "{{ failure_url|default:'' }}",
+        };
+    </script>
+<script src="{% static 'js/apps/modulos/pedidos/checkout.js' %}"></script>
+</body>
+</html>

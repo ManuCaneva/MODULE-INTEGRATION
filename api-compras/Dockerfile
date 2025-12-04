@@ -1,19 +1,24 @@
-# Dockerfile
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /src
+FROM python:3.13-slim
 
-COPY ["SolutionCompras/ComprasAPI/ComprasAPI.csproj", "SolutionCompras/ComprasAPI/"]
-RUN dotnet restore "SolutionCompras/ComprasAPI/ComprasAPI.csproj"
+# Variables recomendadas
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-COPY . .
-WORKDIR "/src/SolutionCompras/ComprasAPI"
-RUN dotnet build "ComprasAPI.csproj" -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish "ComprasAPI.csproj" -c Release -o /app/publish /p:UseAppHost=false
-
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+# Establece el directorio de trabajo en el contenedor
 WORKDIR /app
-COPY --from=publish /app/publish .
-EXPOSE 80
-ENTRYPOINT ["dotnet", "ComprasAPI.dll"]
+
+# Copia el archivo requirements.txt e instala dependencias
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia el código de tu aplicación Django
+COPY . /app/
+
+# Recopila los archivos estáticos (opcional para producción)
+RUN python manage.py collectstatic --noinput
+
+# Expone el puerto de Gunicorn
+EXPOSE 8000
+
+# Comando para ejecutar Gunicorn
+CMD ["gunicorn", "Main.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

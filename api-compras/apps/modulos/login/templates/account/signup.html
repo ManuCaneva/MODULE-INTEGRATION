@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load socialaccount %}
+{% block menu_vertical %} {% endblock %}
+<style>
+  {% block style_general %}
+
+  .nav-link {
+    font-size: 20px;
+  }
+
+
+  .container_login {
+    position: absolute;
+    top: -100%; /* Inicia fuera de la pantalla */
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 430px;
+    width: 100%;
+    background: #fff;
+    border-radius: 7px;
+    box-shadow: 2px 5px 20px black;
+    opacity: 1;
+    transition: top 0.7s ease-in-out; /* Transición de la propiedad top */
+  }
+  .container_login .registration{
+  display: none;
+  }
+  #check:checked ~ .registration{
+  display: block;
+  }
+  #check:checked ~ .login{
+  display: none;
+  }
+  #check{
+  display: none;
+  }
+  .container_login .form{
+  padding: 2rem;
+  }
+  .form header{
+  font-size: 2rem;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  }
+  .form input{
+  height: 60px;
+  width: 100%;
+  padding: 0 15px;
+  font-size: 17px;
+  margin-bottom: 1.3rem;
+  border: 1px solid black;
+  border-radius: 6px;
+  outline: none;
+  }
+  .form input:focus{
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+  }
+  .form a{
+  font-size: 16px;
+  color: black;
+  text-decoration: none;
+  }
+  .form a:hover{
+  text-decoration: underline;
+  }
+  .form input.button{
+  color: #fff;
+  background: black;
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  margin-top: 1.7rem;
+  cursor: pointer;
+  transition: 0.4s;
+  }
+  .form input.button:hover{
+  background: #006653;
+  }
+  .signup{
+  font-size: 17px;
+  text-align: center;
+  }
+  .signup label{
+  color: #009579;
+  cursor: pointer;
+  }
+  .signup label:hover{
+  text-decoration: underline;
+  }
+
+
+  .container_login.show {
+    top: 20%; /* Centra en la pantalla cuando se agrega la clase 'show' */
+  }
+
+
+
+
+
+    #check {
+        display: none;
+    }
+
+    .container_login .form {
+      padding: 2rem;
+    }
+
+
+
+
+    /*FONDO DEL LOGIN*/
+    .loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    z-index: 9999;
+    }
+
+    .logo-container {
+        perspective: 800px; /* Ajusta la perspectiva según tus preferencias */
+    }
+
+    .logo {
+        width: 300px;
+        height: auto;
+        animation: spin 2s infinite linear;
+        transform-style: preserve-3d;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotateY(0deg);
+        }
+        100% {
+            transform: rotateY(360deg);
+        }
+    }
+
+    .logo img {
+        width: 100%;
+        height: auto;
+        transform: translateZ(150px); /* Ajusta el grosor 3D según tus necesidades */
+    }
+
+
+  {% endblock %}
+</style>
+
+<!--  cosa que saco del base   -->
+
+{% block contenido_nav1 %}{% endblock %}
+{% block carrito %}{% endblock %}
+{% block administracion %}{% endblock %}
+{% block historial %}{% endblock %}
+
+<!-------------------------------->
+
+{% block logo %}<img src="{% static 'img/logo_principal.png' %}" alt="Logo de la tienda" height="55" width="auto"> {% endblock %}
+
+{% block content %}
+
+  <div class="loader">
+    <div class="logo-container">
+      <img src="{% static 'img/logo_principal.png' %}" alt="Logo" class="logo"> 
+    </div>
+    
+  </div>
+  <div class="container_login">
+      <input type="checkbox" id="check">
+      <div class="login form">
+          
+        <header>Inicio Sesion</header>
+        <form action="{% url 'login' %}" method="post">
+          {% csrf_token %}
+          <input type="text" placeholder="Ingrese su Gmail" name="gmail" required>
+          <input type="password" placeholder="Ingrese su Contraseña" name="contraseña" required>
+          <a href="#">Olvide mi contraseña</a>
+          <input type="submit" class="button" value="Inicia Sesion" >
+        </form>
+        <div class="signup">
+          <span class="signup">¿No tienes cuenta?
+          <label for="check">Registrate</label>
+          </span>
+        </div>
+      </div>
+      <div class="registration form">
+        <header>Registrate</header>
+        <form action="{% url 'registro' %}" method="post">
+          {% csrf_token %}
+          <input type="text" placeholder="Ingresa su gmail" name="gmail" required>
+          <input type="text" placeholder="Nombre de Usuario" name="usuario" required>
+          <input type="password" placeholder="Ingrese su contraseña" name="contraseña" required>
+          <input type="password" placeholder="Confirme su contraseña" name="conf_contraseña" required>
+          <input type="submit" class="button" value="Registrate">
+        </form>
+        <div class="signup">
+          <span class="signup">¿Tienes cuenta?
+          <label for="check">Inicia sesion</label>
+          </span>
+        </div>
+      </div>
+      <!-- Opción de iniciar sesión con Google -->
+    <p>O iniciar sesión con:</p>
+    <a href="{% provider_login_url 'google' next='/dashboard/' %}">
+      <button style="background-color: #4285F4; color: white; padding: 10px; border: none;">
+          Iniciar Sesión con Google
+      </button>
+  </a>
+  </div>
+
+{% endblock %}
+
+
+
+{% block script %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+
+       
+    setTimeout(function () {
+      document.querySelector('.container_login').classList.add('show');
+    }, 1500); 
+    });
+</script>
+<script>
+  // Muestra la pantalla de carga al cargar la página
+  document.addEventListener('DOMContentLoaded', function () {
+      var loader = document.querySelector('.loader');
+      loader.style.display = 'flex'; // Muestra la pantalla de carga
+      document.body.style.overflow = 'hidden'; // Evita el desplazamiento mientras se carga
+  });
+
+  // Oculta la pantalla de carga después de 2 segundos
+  setTimeout(function () {
+      var loader = document.querySelector('.loader');
+      loader.style.display = 'none';
+      document.body.style.overflow = 'visible'; // Restaura el desplazamiento después de 2 segundos
+  }, 1500); // 
+</script>
+<!--
+  <script>
+  window.addEventListener('load', function () {
+      var loader = document.querySelector('.loader');
+      loader.style.display = 'none';
+      document.body.style.overflow = 'visible'; /* Restaura el desplazamiento después de cargar */
+  });
+</script>
+-->
+<script>
+
+ 
+{% endblock %}

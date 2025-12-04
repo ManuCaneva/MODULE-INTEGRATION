@@ -1,0 +1,405 @@
+openapi: 3.1.0
+info:
+  title: Portal de Compras - API para Subsistemas (ES, inline)
+  version: 1.0.0
+  summary: Endpoints expuestos por el Portal para Stock y Logística (SSO y Pedidos). Autenticación por API Key + firma HMAC.
+servers:
+  - url: https://portal.example.com/api/v1
+    description: Producción
+  - url: http://localhost:8000/api/v1
+    description: Desarrollo
+tags:
+  - name: SSO
+  - name: Pedidos
+  - name: Eventos
+  - name: Admin
+
+paths:
+  /.well-known/jwks.json:
+    get:
+      tags: [SSO]
+      summary: Claves públicas (JWKS) para validar JWT del Portal
+      responses:
+        '200':
+          description: Conjunto de claves JWK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kty: { type: string, example: "RSA" }
+                        kid: { type: string }
+                        use: { type: string, example: "sig" }
+                        alg: { type: string, example: "RS256" }
+                        n: { type: string, description: "Módulo base64url" }
+                        e: { type: string, description: "Exponente base64url", example: "AQAB" }
+
+  /sso/introspeccion:
+    post:
+      tags: [SSO]
+      summary: ¿El usuario sigue autenticado? (introspección de token)
+      description: Verifica si un access token está activo o revocado y devuelve claims relevantes.
+      parameters:
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Fecha
+          required: true
+          schema: { type: string, format: date-time }
+        - in: header
+          name: X-Firma
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string, description: "JWT a validar" }
+            example:
+              token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Resultado de introspección
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active: { type: boolean }
+                  sub: { type: string, description: "Subject" }
+                  user_id: { type: string, format: uuid }
+                  email: { type: string, format: email }
+                  roles:
+                    type: array
+                    items: { type: string, example: "stock:vendedor" }
+                  scope: { type: string }
+                  iat: { type: integer }
+                  exp: { type: integer }
+                  iss: { type: string }
+        '400': { description: Token faltante o malformado }
+        '403': { description: API key o firma inválida }
+
+  /sso/usuario:
+    get:
+      tags: [SSO]
+      summary: Datos básicos y roles del usuario (por token)
+      description: Similar a OIDC UserInfo. Requiere el JWT del usuario y autenticación s2s.
+      parameters:
+        - in: header
+          name: Authorization
+          description: "Bearer <access_token> del usuario"
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Fecha
+          required: true
+          schema: { type: string, format: date-time }
+        - in: header
+          name: X-Firma
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Información del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  sub: { type: string }
+                  nombre: { type: string }
+                  email: { type: string, format: email }
+                  telefono: { type: string }
+                  roles:
+                    type: array
+                    items: { type: string, example: "portal:cliente" }
+        '401': { description: Token inválido o expirado }
+        '403': { description: API key o firma inválida }
+
+  /sso/autorizar:
+    post:
+      tags: [SSO]
+      summary: ¿El usuario está autorizado para esta acción?
+      description: Helper de autorización (RBAC/ABAC ligero) centralizado en el Portal.
+      parameters:
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Fecha
+          required: true
+          schema: { type: string, format: date-time }
+        - in: header
+          name: X-Firma
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string, description: "JWT del usuario (opcional si se pasa user_id)" }
+                user_id: { type: string, format: uuid, description: "Alternativa al token" }
+                action: { type: string, example: "reservar_stock" }
+                resource:
+                  type: object
+                  description: "Recurso objetivo y atributos opcionales"
+                  properties:
+                    sistema: { type: string, example: "stock" }
+                    tipo: { type: string, example: "producto" }
+                    id: { type: string, example: "SKU-123" }
+                    atributos:
+                      type: object
+                      additionalProperties: true
+            example:
+              token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+              action: "reservar_stock"
+              resource: { sistema: "stock", tipo: "producto", id: "SKU-123" }
+      responses:
+        '200':
+          description: Resultado de autorización
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  allowed: { type: boolean }
+                  reason: { type: string }
+                  evaluated_roles:
+                    type: array
+                    items: { type: string, example: "stock:vendedor" }
+        '401': { description: Usuario no autenticado }
+        '403': { description: API key o firma inválida }
+
+  /subsistemas/pedidos/{pedidoId}:
+    get:
+      tags: [Pedidos]
+      summary: Detalle de pedido para preparación/entrega
+      parameters:
+        - in: path
+          name: pedidoId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Fecha
+          required: true
+          schema: { type: string, format: date-time }
+        - in: header
+          name: X-Firma
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Pedido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  status: { type: string, example: "confirmado" }
+                  notas: { type: string }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        product_id: { type: string, format: uuid }
+                        sku: { type: string }
+                        nombre: { type: string }
+                        cantidad: { type: integer, minimum: 1 }
+                        precio_unitario:
+                          type: object
+                          properties:
+                            currency: { type: string, example: "ARS" }
+                            amount: { type: number, format: float }
+                        subtotal:
+                          type: object
+                          properties:
+                            currency: { type: string, example: "ARS" }
+                            amount: { type: number, format: float }
+                  totales:
+                    type: object
+                    properties:
+                      currency: { type: string, example: "ARS" }
+                      items: { type: number, format: float }
+                      envio: { type: number, format: float }
+                      total: { type: number, format: float }
+                  envio:
+                    type: object
+                    properties:
+                      option:
+                        type: object
+                        properties:
+                          carrier: { type: string, example: "Andreani" }
+                          service: { type: string, example: "Estándar" }
+                          eta_days: { type: integer, example: 3 }
+                          price:
+                            type: object
+                            properties:
+                              currency: { type: string, example: "ARS" }
+                              amount: { type: number, format: float }
+                      direccion:
+                        type: object
+                        properties:
+                          nombre: { type: string }
+                          persona: { type: string }
+                          telefono: { type: string }
+                          calle: { type: string }
+                          numero: { type: string }
+                          ciudad: { type: string }
+                          provincia: { type: string }
+                          codigo_postal: { type: string }
+                          pais: { type: string, example: "AR" }
+        '403': { description: API key o firma inválida }
+        '404': { description: Pedido no encontrado }
+
+  /subsistemas/pedidos/{pedidoId}/estado:
+    patch:
+      tags: [Pedidos]
+      summary: Actualizar estado del pedido (Stock/Logística)
+
+      parameters:
+        - in: path
+          name: pedidoId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Fecha
+          required: true
+          schema: { type: string, format: date-time }
+        - in: header
+          name: X-Firma
+          required: true
+          schema: { type: string }
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado:
+                  type: string
+                  enum: [preparando, listo_para_envio, en_camino, entregado, cancelado_por_stock, fallido_entrega]
+                motivo: { type: string, description: "Detalle si aplica" }
+            example: { estado: "preparando" }
+      responses:
+        '200': { description: Estado actualizado }
+        '409': { description: Transición inválida }
+        '403': { description: API key o firma inválida }
+        '404': { description: Pedido no encontrado }
+
+  /subsistemas/pedidos/{pedidoId}/eventos:
+    post:
+      tags: [Eventos]
+      summary: Publicar evento del pedido (tracking, incidencias)
+      description: Registro de eventos de dominio (tracking, retiros, intentos fallidos, etc.).
+      parameters:
+        - in: path
+          name: pedidoId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: header
+          name: X-Api-Key
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Fecha
+          required: true
+          schema: { type: string, format: date-time }
+        - in: header
+          name: X-Firma
+          required: true
+          schema: { type: string }
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, at]
+              properties:
+                code:
+                  type: string
+                  enum:
+                    - reserva_confirmada
+                    - reserva_rechazada
+                    - tracking_asignado
+                    - retiro_transportista
+                    - en_camino
+                    - intento_fallido
+                    - entregado
+                    - reserva_expirada
+                at: { type: string, format: date-time }
+                source: { type: string, example: "logistica" }
+                metadata:
+                  type: object
+                  properties:
+                    carrier: { type: string }
+                    tracking_code: { type: string }
+                    tracking_url: { type: string, format: uri }
+                    detalle: { type: string }
+            example:
+              code: "tracking_asignado"
+              at: "2025-09-12T02:10:00Z"
+              source: "logistica"
+              metadata:
+                carrier: "Andreani"
+                tracking_code: "ABC123456"
+                tracking_url: "https://seguimiento.example.com/ABC123456"
+      responses:
+        '202': { description: Evento aceptado }
+        '403': { description: API key o firma inválida }
+        '404': { description: Pedido no encontrado }
+
+  /subsistemas/estado:
+    get:
+      tags: [Admin]
+      summary: Healthcheck de integraciones
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+                  version: { type: string, example: "1.0.0" }

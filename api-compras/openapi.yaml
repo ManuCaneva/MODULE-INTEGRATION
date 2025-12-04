@@ -1,0 +1,1649 @@
+openapi: 3.0.3
+info:
+  title: E-commerce API Completa
+  description: API para sistema de e-commerce con múltiples backends
+  version: 1.0.0
+
+servers:
+  - url: https://api.compras.com/v1
+    description: Backend Compras
+  - url: https://api.stock.com/v1
+    description: Backend Stock
+  - url: https://api.logistica.com/v1
+    description: Backend Logística
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      required:
+        - email
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        repeatPassword:
+          type: string
+          format: password
+        firstName:
+          type: string
+        lastName:
+          type: string
+      required:
+        - email
+        - password
+        - repeatPassword
+        - firstName
+        - lastName
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        stock:
+          type: integer
+        category:
+          type: string
+
+    CartItem:
+      type: object
+      properties:
+        productId:
+          type: integer
+        quantity:
+          type: integer
+        product:
+          $ref: '#/components/schemas/Product'
+
+    Cart:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        total:
+          type: number
+          format: float
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+          format: date-time
+        status:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        total:
+          type: number
+          format: float
+
+    BookingRequest:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: integer
+              quantity:
+                type: integer
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        products:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: integer
+              quantity:
+                type: integer
+
+    TrackingRequest:
+      type: object
+      properties:
+        orderId:
+          type: integer
+        address:
+          type: string
+        products:
+          type: array
+          items:
+            type: object
+
+    Tracking:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        orderId:
+          type: integer
+        creationDate:
+          type: string
+          format: date-time
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        phone:
+          type: string
+        dni:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserProfileCreate:
+      type: object
+      properties:
+        phone:
+          type: string
+        dni:
+          type: string
+        birthDate:
+          type: string
+          format: date
+      required:
+        - phone
+        - dni
+        - birthDate
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        phone:
+          type: string
+        dni:
+          type: string
+        birthDate:
+          type: string
+          format: date
+      required:
+        - phone
+        - dni
+        - birthDate
+
+paths:
+  # ========== FRONTEND ↔ BACKEND COMPRAS ==========
+  
+  # AUTENTICACIÓN
+  /api/auth/login:
+    post:
+      tags: [Frontend - Auth]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Credenciales incorrectas"
+                  code:
+                    type: string
+                    example: "INVALID_CREDENTIALS"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  /api/auth/register:
+    post:
+      tags: [Frontend - Auth]
+      summary: Registrar usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuario registrado exitosamente"
+        '400':
+          description: Solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Las contraseñas no coinciden"
+                  code:
+                    type: string
+                    example: "PASSWORD_MISMATCH"
+        '409':
+          description: Conflicto - Email ya registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "El email ya está registrado"
+                  code:
+                    type: string
+                    example: "EMAIL_ALREADY_EXISTS"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  /api/auth/refresh:
+    get:
+      tags: [Frontend - Auth]
+      summary: Refrescar token JWT
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token refrescado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Token inválido o expirado"
+                  code:
+                    type: string
+                    example: "INVALID_TOKEN"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  # PERFIL DE USUARIO
+  /api/user/profile:
+    get:
+      tags: [Frontend - Usuario]
+      summary: Obtener perfil del usuario
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '404':
+          description: Perfil no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Perfil no encontrado"
+                  code:
+                    type: string
+                    example: "PROFILE_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+    post:
+      tags: [Frontend - Usuario]
+      summary: Crear perfil del usuario
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreate'
+      responses:
+        '201':
+          description: Perfil creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Perfil creado exitosamente"
+        '400':
+          description: Solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Datos de perfil inválidos"
+                  code:
+                    type: string
+                    example: "INVALID_PROFILE_DATA"
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '409':
+          description: Conflicto - Perfil ya existe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "El perfil ya existe"
+                  code:
+                    type: string
+                    example: "PROFILE_ALREADY_EXISTS"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+    put:
+      tags: [Frontend - Usuario]
+      summary: Actualizar perfil del usuario
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Perfil actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Perfil actualizado exitosamente"
+        '400':
+          description: Solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Datos de perfil inválidos"
+                  code:
+                    type: string
+                    example: "INVALID_PROFILE_DATA"
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '404':
+          description: Perfil no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Perfil no encontrado"
+                  code:
+                    type: string
+                    example: "PROFILE_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  # PRODUCTOS
+  /api/product:
+    get:
+      tags: [Frontend - Productos]
+      summary: Ver todos los productos
+      responses:
+        '200':
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+        '502':
+          description: Error de conexión con servicio Stock
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Servicio Stock no disponible"
+                  code:
+                    type: string
+                    example: "STOCK_SERVICE_UNAVAILABLE"
+
+  /api/product/{id}:
+    get:
+      tags: [Frontend - Productos]
+      summary: Ver un producto específico
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalles del producto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Producto no encontrado"
+                  code:
+                    type: string
+                    example: "PRODUCT_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+        '502':
+          description: Error de conexión con servicio Stock
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Servicio Stock no disponible"
+                  code:
+                    type: string
+                    example: "STOCK_SERVICE_UNAVAILABLE"
+
+  # CARRITO (CRUD)
+  /api/shopcart:
+    get:
+      tags: [Frontend - Carrito]
+      summary: Ver carrito
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Contenido del carrito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+    post:
+      tags: [Frontend - Carrito]
+      summary: Agregar al carrito
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  type: integer
+                quantity:
+                  type: integer
+      responses:
+        '201':
+          description: Producto agregado al carrito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Producto agregado al carrito"
+        '400':
+          description: Solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Stock insuficiente"
+                  code:
+                    type: string
+                    example: "INSUFFICIENT_STOCK"
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Producto no encontrado"
+                  code:
+                    type: string
+                    example: "PRODUCT_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+    put:
+      tags: [Frontend - Carrito]
+      summary: Actualizar carrito
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  type: integer
+                quantity:
+                  type: integer
+      responses:
+        '200':
+          description: Carrito actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Carrito actualizado"
+        '400':
+          description: Solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Cantidad inválida"
+                  code:
+                    type: string
+                    example: "INVALID_QUANTITY"
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '404':
+          description: Producto no encontrado en el carrito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Producto no encontrado en el carrito"
+                  code:
+                    type: string
+                    example: "CART_ITEM_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+    delete:
+      tags: [Frontend - Carrito]
+      summary: Vaciar carrito
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Carrito vaciado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Carrito vaciado"
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  /api/shopcart/{productId}:
+    delete:
+      tags: [Frontend - Carrito]
+      summary: Remover producto del carrito
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Producto removido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Producto removido del carrito"
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '404':
+          description: Producto no encontrado en el carrito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Producto no encontrado en el carrito"
+                  code:
+                    type: string
+                    example: "CART_ITEM_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  # CHECKOUT Y PEDIDOS
+  /api/shopcart/checkout:
+    post:
+      tags: [Frontend - Pedidos]
+      summary: Confirmar pedido
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deliveryAddress:
+                  type: string
+                paymentMethod:
+                  type: string
+      responses:
+        '201':
+          description: Pedido confirmado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Carrito vacío"
+                  code:
+                    type: string
+                    example: "EMPTY_CART"
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '409':
+          description: Conflicto - Stock insuficiente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Stock insuficiente"
+                  code:
+                    type: string
+                    example: "INSUFFICIENT_STOCK"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+        '502':
+          description: Error de conexión con servicios externos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error en servicios externos"
+                  code:
+                    type: string
+                    example: "EXTERNAL_SERVICE_ERROR"
+
+  /api/shopcart/history:
+    get:
+      tags: [Frontend - Pedidos]
+      summary: Ver historial de pedidos
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Historial de pedidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  /api/shopcart/history/{id}:
+    get:
+      tags: [Frontend - Pedidos]
+      summary: Ver un pedido específico
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalles del pedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '404':
+          description: Pedido no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Pedido no encontrado"
+                  code:
+                    type: string
+                    example: "ORDER_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+    delete:
+      tags: [Frontend - Pedidos]
+      summary: Cancelar pedido
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Pedido cancelado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Pedido cancelado exitosamente"
+        '400':
+          description: Solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No se puede cancelar un pedido ya enviado"
+                  code:
+                    type: string
+                    example: "CANNOT_CANCEL_SHIPPED_ORDER"
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No autorizado"
+                  code:
+                    type: string
+                    example: "UNAUTHORIZED"
+        '404':
+          description: Pedido no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Pedido no encontrado"
+                  code:
+                    type: string
+                    example: "ORDER_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  # ========== BACKEND COMPRAS ↔ BACKEND STOCK ==========
+  
+  # LO QUE COMPRAS OFRECE A STOCK
+  /api/booking/{id}:
+    put:
+      tags: [Compras ↔ Stock]
+      summary: Vincular pedido a reserva
+      description: Endpoint que Backend Compras ofrece a Backend Stock
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId:
+                  type: integer
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Pedido vinculado a reserva
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Pedido vinculado a reserva exitosamente"
+        '404':
+          description: Reserva no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Reserva no encontrada"
+                  code:
+                    type: string
+                    example: "BOOKING_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  # LO QUE STOCK OFRECE A COMPRAS
+  /api/stock/product:
+    get:
+      tags: [Compras ↔ Stock]
+      summary: Obtener productos desde Stock
+      description: Endpoint que Backend Stock ofrece a Backend Compras
+      responses:
+        '200':
+          description: Lista de productos desde Stock
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  /api/stock/product/{id}:
+    get:
+      tags: [Compras ↔ Stock]
+      summary: Obtener producto específico desde Stock
+      description: Endpoint que Backend Stock ofrece a Backend Compras
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Producto desde Stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Producto no encontrado"
+                  code:
+                    type: string
+                    example: "PRODUCT_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  /api/stock/booking:
+    post:
+      tags: [Compras ↔ Stock]
+      summary: Crear reserva en Stock
+      description: Endpoint que Backend Stock ofrece a Backend Compras
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '201':
+          description: Reserva creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: Solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Stock insuficiente"
+                  code:
+                    type: string
+                    example: "INSUFFICIENT_STOCK"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  /api/stock/booking/{id}:
+    get:
+      tags: [Compras ↔ Stock]
+      summary: Obtener reserva desde Stock
+      description: Endpoint que Backend Stock ofrece a Backend Compras
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalles de la reserva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: Reserva no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Reserva no encontrada"
+                  code:
+                    type: string
+                    example: "BOOKING_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  # ========== BACKEND COMPRAS ↔ BACKEND LOGÍSTICA ==========
+  
+  # LO QUE COMPRAS OFRECE A LOGÍSTICA
+  /api/tracking/{id}:
+    put:
+      tags: [Compras ↔ Logística]
+      summary: Vincular pedido al envío
+      description: Endpoint que Backend Compras ofrece a Backend Logística
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId:
+                  type: integer
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Pedido vinculado al envío
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Pedido vinculado al envío exitosamente"
+        '404':
+          description: Envío no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Envío no encontrado"
+                  code:
+                    type: string
+                    example: "TRACKING_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  # LO QUE LOGÍSTICA OFRECE A COMPRAS
+  /api/logistics/tracking:
+    post:
+      tags: [Compras ↔ Logística]
+      summary: Crear tracking en Logística
+      description: Endpoint que Backend Logística ofrece a Backend Compras
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackingRequest'
+      responses:
+        '201':
+          description: Tracking creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracking'
+        '400':
+          description: Solicitud incorrecta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Dirección de entrega inválida"
+                  code:
+                    type: string
+                    example: "INVALID_ADDRESS"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+  /api/logistics/tracking/{id}:
+    get:
+      tags: [Compras ↔ Logística]
+      summary: Obtener tracking desde Logística
+      description: Endpoint que Backend Logística ofrece a Backend Compras
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Estado del tracking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracking'
+        '404':
+          description: Tracking no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Tracking no encontrado"
+                  code:
+                    type: string
+                    example: "TRACKING_NOT_FOUND"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+                  code:
+                    type: string
+                    example: "INTERNAL_ERROR"
+
+tags:
+  - name: Frontend - Auth
+    description: Autenticación entre Frontend y Backend Compras
+  - name: Frontend - Usuario
+    description: Gestión de perfil de usuario entre Frontend y Backend Compras
+  - name: Frontend - Productos
+    description: Gestión de productos entre Frontend y Backend Compras
+  - name: Frontend - Carrito
+    description: Operaciones de carrito entre Frontend y Backend Compras
+  - name: Frontend - Pedidos
+    description: Gestión de pedidos entre Frontend y Backend Compras
+  - name: Compras ↔ Stock
+    description: Comunicación bidireccional entre Backend Compras y Backend Stock
+  - name: Compras ↔ Logística
+    description: Comunicación bidireccional entre Backend Compras y Backend Logística

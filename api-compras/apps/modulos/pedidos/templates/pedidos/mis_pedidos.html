@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Mis Pedidos
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .pedidos-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .pedido-card {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.07);
+        border: 1px solid #eee;
+    }
+
+    .pedido-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .pedido-id {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .pedido-fecha {
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .estado-badge {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+
+    .estado-pendiente { background: #fff3cd; color: #856404; }
+    .estado-enviado { background: #d1ecf1; color: #0c5460; }
+    .estado-entregado { background: #d4edda; color: #155724; }
+    .estado-cancelado { background: #f8d7da; color: #721c24; }
+
+    .pedido-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 15px;
+    }
+
+    .pedido-section {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    .pedido-section h4 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #333;
+        text-transform: uppercase;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 8px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #555;
+    }
+
+    .info-value {
+        color: #333;
+    }
+
+    .productos-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 0.9rem;
+        grid-column: 1 / -1;
+    }
+
+    .productos-table th {
+        background: #e8e8e8;
+        padding: 8px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #ccc;
+    }
+
+    .productos-table td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .productos-table tr:hover {
+        background: #f5f5f5;
+    }
+
+    .pedido-total-section {
+        grid-column: 1 / -1;
+        background: #e8f5e9;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    .pedido-total-label {
+        color: #2e7d32;
+    }
+
+    .pedido-total-value {
+        color: #1b5e20;
+    }
+
+    .no-pedidos {
+        margin-top: 60px;
+        text-align: center;
+        font-size: 1.3rem;
+        color: #777;
+    }
+
+    .referencias {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="pedidos-container">
+
+    <h2 style="margin-bottom: 25px; font-weight:600;">Mis Pedidos</h2>
+
+    {% if pedidos and pedidos|length > 0 %}
+
+        {% for pedido in pedidos %}
+
+        <div class="pedido-card">
+            
+            <div class="pedido-header">
+
+                <div>
+                    <div class="pedido-id">Pedido #{{ pedido.id }}</div>
+                    <div class="pedido-fecha">
+                        Realizado el {{ pedido.creado_en|date:"d/m/Y H:i" }}
+                    </div>
+                </div>
+
+                <div>
+                    {% if pedido.estado == "pendiente" %}
+                        <span class="estado-badge estado-pendiente">Pendiente</span>
+                    {% elif pedido.estado == "enviado" %}
+                        <span class="estado-badge estado-enviado">Enviado</span>
+                    {% elif pedido.estado == "entregado" %}
+                        <span class="estado-badge estado-entregado">Entregado</span>
+                    {% elif pedido.estado == "cancelado" %}
+                        <span class="estado-badge estado-cancelado">Cancelado</span>
+                    {% else %}
+                        <span class="estado-badge estado-pendiente">{{ pedido.estado }}</span>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <div class="pedido-content">
+                
+                <!-- Información de envío -->
+                <div class="pedido-section">
+                    <h4>Información de Envío</h4>
+                    <div class="info-row">
+                        <span class="info-label">Tipo:</span>
+                        <span class="info-value">{{ pedido.tipo_transporte|capfirst }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Receptor:</span>
+                        <span class="info-value">{{ pedido.direccion_envio.nombre_receptor }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Teléfono:</span>
+                        <span class="info-value">{{ pedido.direccion_envio.telefono }}</span>
+                    </div>
+                </div>
+
+                <!-- Dirección de entrega -->
+                <div class="pedido-section">
+                    <h4>Dirección</h4>
+                    <div class="info-row">
+                        <span class="info-label">Calle:</span>
+                        <span class="info-value">{{ pedido.direccion_envio.calle|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Pcia/Depto:</span>
+                        <span class="info-value">{{ pedido.direccion_envio.provincia|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Ciudad:</span>
+                        <span class="info-value">{{ pedido.direccion_envio.ciudad|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Código Postal:</span>
+                        <span class="info-value">{{ pedido.direccion_envio.codigo_postal|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">País:</span>
+                        <span class="info-value">{{ pedido.direccion_envio.pais|default:"N/A" }}</span>
+                    </div>
+                </div>
+
+                <!-- Tabla de productos -->
+                <table class="productos-table">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unit.</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pedido.detalles %}
+                        <tr>
+                            <td>{{ item.nombre_producto }}</td>
+                            <td>{{ item.cantidad }}</td>
+                            <td>${{ item.precio_unitario|floatformat:2 }}</td>
+                            <td>${{ item.precio_total|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Total -->
+                <div class="pedido-total-section">
+                    <span class="pedido-total-label">Total del Pedido:</span>
+                    <span class="pedido-total-value">${{ pedido.total|floatformat:2 }}</span>
+                </div>
+
+                <!-- Referencias -->
+                {% if pedido.referencia_envio or pedido.referencia_reserva_stock or pedido.confirmado_en or pedido.actualizado_en %}
+                <div class="pedido-section referencias">
+                    <h4 style="text-transform: none;">Referencias</h4>
+                    {% if pedido.referencia_envio %}
+                    <div class="info-row">
+                        <span class="info-label">Ref. Envío:</span>
+                        <span class="info-value">{{ pedido.referencia_envio }}</span>
+                    </div>
+                    {% endif %}
+                    {% if pedido.referencia_reserva_stock %}
+                    <div class="info-row">
+                        <span class="info-label">Ref. Stock:</span>
+                        <span class="info-value">{{ pedido.referencia_reserva_stock }}</span>
+                    </div>
+                    {% endif %}
+                    {% if pedido.confirmado_en %}
+                    <div class="info-row">
+                        <span class="info-label">Confirmado:</span>
+                        <span class="info-value">{{ pedido.confirmado_en|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if pedido.actualizado_en %}
+                    <div class="info-row">
+                        <span class="info-label">Actualizado:</span>
+                        <span class="info-value">{{ pedido.actualizado_en|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="no-pedidos">
+            No tenés pedidos realizados todavía.
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,93 @@
+
+{% load i18n %}
+{% load allauth %}
+
+
+
+{% block content %}
+    <!-- Estilos CSS embebidos -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #333333;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #666666;
+            margin-bottom: 20px;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: #ffffff;
+            font-size: 16px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+
+    <!-- Contenedor principal -->
+    <div class="container">
+        <!-- Verifica si el proceso es "connect" o "sign in" -->
+        {% if process == "connect" %}
+            <!-- Encabezado principal para la conexión -->
+            <h1>
+                {% blocktrans with provider.name as provider %}Connect {{ provider }}{% endblocktrans %}
+            </h1>
+            <!-- Mensaje explicativo para la conexión -->
+            <p>
+                {% blocktrans with provider.name as provider %}
+                    You are about to connect a new third-party account from {{ provider }}.
+                {% endblocktrans %}
+            </p>
+        {% else %}
+            <!-- Encabezado principal para el inicio de sesión -->
+            <h1>
+                {% blocktrans with provider.name as provider %}Sign In Via {{ provider }}{% endblocktrans %}
+            </h1>
+            <!-- Mensaje explicativo para el inicio de sesión -->
+            <p>
+                {% blocktrans with provider.name as provider %}You are about to sign in using a third-party account from {{ provider }}.{% endblocktrans %}
+
+            </p>
+        {% endif %}
+
+        <!-- Formulario para el proceso de conexión o inicio de sesión -->
+        <form method="post">
+            {% csrf_token %}
+            <!-- Botón de envío -->
+            <button type="submit">
+                {% trans "Continue" %}
+            </button>
+        </form>
+    </div>
+{% endblock content %}

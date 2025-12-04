@@ -1,0 +1,74 @@
+/* static/css/pago_status.css (VERSIÓN MEJORADA) */
+
+/* ✅ Define una animación de "aparición" para el ícono */
+@keyframes pop-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.status-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* ✅ Altura mínima calculada para empujar el footer hacia abajo */
+    /* (100% de la altura de la ventana - altura del navbar - altura aproximada del footer) */
+    min-height: calc(100vh - 70px - 180px); 
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.status-card {
+    background-color: #ffffff;
+    padding: 40px 50px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 100%;
+}
+
+.status-icon {
+    font-size: 7rem; /* ✅ Ícono más grande */
+    line-height: 1;
+    margin-bottom: 24px;
+    /* ✅ Aplicamos la animación */
+    animation: pop-in 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ✅ Color verde para el ícono de éxito */
+.status-card.success .status-icon {
+    color: #28a745;
+}
+
+/* Color rojo para el ícono de fallo (lo usaremos después) */
+.status-card.failure .status-icon {
+    color: #dc3545;
+}
+
+.status-card h2 {
+    font-size: 2.25rem; /* ✅ Título más grande */
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.status-card p {
+    color: #6c757d;
+    font-size: 1.15rem; /* ✅ Párrafo más grande */
+    margin-bottom: 32px;
+}
+
+/* ✅ Contenedor para los botones */
+.status-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap; /* Para que se vea bien en pantallas muy chicas */
+}
+
+/* Nota: Los estilos de los botones (.btn, .btn-primary, .btn-secondary) 
+   los tomará de los CSS que ya tenés definidos en tu proyecto para mantener la consistencia. */

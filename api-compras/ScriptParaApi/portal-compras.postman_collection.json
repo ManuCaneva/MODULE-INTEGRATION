@@ -1,0 +1,1082 @@
+{
+  "info": {
+    "_postman_id": "643734d7-bf70-4cef-ae5f-8f4d5e4b8f83",
+    "name": "Portal Compras - Demo",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{TOKEN}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "BASE_URL_COMPRAS",
+      "value": "http://localhost/compras"
+    },
+    {
+      "key": "BASE_URL_STOCK",
+      "value": "http://localhost/stock"
+    },
+    {
+      "key": "BASE_URL_LOGISTICA",
+      "value": "http://localhost/logistica"
+    },
+    {
+      "key": "TOKEN",
+      "value": ""
+    },
+    {
+      "key": "PRODUCT_ID",
+      "value": ""
+    },
+    {
+      "key": "PEDIDO_ID",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Keycloak Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"TOKEN\", jsonData.access_token);",
+                  "    console.log(\"Token guardado: \" + jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/token"
+            },
+            "description": "Obtiene un token de acceso desde Keycloak usando client credentials.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "client_id",
+                  "value": "grupo-04",
+                  "type": "text"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "6be1bec1-9472-499f-ab37-883d78f57829",
+                  "type": "text"
+                },
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                },
+                {
+                  "key": "scope",
+                  "value": "productos:read",
+                  "type": "text"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/auth/login"
+            },
+            "description": "Iniciar sesión y obtener JWT.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@ejemplo.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/auth/register"
+            },
+            "description": "Registrar un nuevo usuario.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevo@ejemplo.com\",\n  \"password\": \"Password123!\",\n  \"repeatPassword\": \"Password123!\",\n  \"firstName\": \"Nombre\",\n  \"lastName\": \"Apellido\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Refresh token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/auth/refresh"
+            },
+            "description": "Refrescar JWT (si el backend lo requiere).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{TOKEN}}\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Get profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/user/profile"
+            },
+            "description": "Obtiene el perfil del usuario autenticado."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/product"
+            },
+            "description": "Lista todos los productos."
+          }
+        },
+        {
+          "name": "Get product by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/product/1"
+            },
+            "description": "Obtiene un producto por ID (cambiar 1 por el ID que corresponda)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "Get cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart"
+            },
+            "description": "Ver carrito actual."
+          }
+        },
+        {
+          "name": "Add item to cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart"
+            },
+            "description": "Agrega un producto al carrito.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": 1,\n  \"quantity\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Update item quantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart"
+            },
+            "description": "Actualiza la cantidad de un producto en el carrito.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": 1,\n  \"quantity\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "Remove item from cart (by productId in path)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart/1"
+            },
+            "description": "Elimina un producto del carrito usando su productId en la URL."
+          }
+        },
+        {
+          "name": "Empty cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart/clear/"
+            },
+            "description": "Vacía todo el carrito usando el endpoint /clear/."
+          }
+        },
+        {
+          "name": "Checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart/checkout"
+            },
+            "description": "Realiza el checkout del carrito y crea un pedido. Lee los items del carrito del usuario autenticado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direccion_envio\": \"Calle Falsa 123, Resistencia, Chaco, Argentina\",\n  \"metodo_pago\": \"tarjeta\",\n  \"tipo_transporte\": \"domicilio\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Order history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart/history"
+            },
+            "description": "Lista el historial de órdenes del usuario."
+          }
+        },
+        {
+          "name": "Get order by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart/history/1"
+            },
+            "description": "Obtiene una orden específica por ID."
+          }
+        },
+        {
+          "name": "Cancel order by id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart/history/1"
+            },
+            "description": "Cancela un pedido específico por ID (si su estado lo permite)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders (Pedidos API)",
+      "item": [
+        {
+          "name": "List all orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/"
+            },
+            "description": "Lista todos los pedidos del usuario autenticado."
+          }
+        },
+        {
+          "name": "Get order detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/1/"
+            },
+            "description": "Obtiene el detalle completo de un pedido por ID."
+          }
+        },
+        {
+          "name": "Create order (manual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/"
+            },
+            "description": "Crea un pedido manualmente (sin usar el carrito).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direccion_envio\": {\n    \"nombre_receptor\": \"Juan Pérez\",\n    \"calle\": \"Av. 9 de Julio 123\",\n    \"ciudad\": \"Resistencia\",\n    \"provincia\": \"Chaco\",\n    \"codigo_postal\": \"3500\",\n    \"pais\": \"Argentina\",\n    \"telefono\": \"+54 362 4123456\"\n  },\n  \"tipo_transporte\": \"domicilio\",\n  \"detalles\": [\n    {\n      \"producto_id\": 1,\n      \"nombre_producto\": \"Laptop Dell XPS 13\",\n      \"cantidad\": 1,\n      \"precio_unitario\": 1299.99\n    },\n    {\n      \"producto_id\": 2,\n      \"nombre_producto\": \"Mouse Logitech\",\n      \"cantidad\": 2,\n      \"precio_unitario\": 25.50\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Confirm order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/1/confirmar/"
+            },
+            "description": "Confirma un pedido (reserva stock y crea envío en logística).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo_transporte\": \"road\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Cancel order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/1/cancelar/"
+            },
+            "description": "Cancela un pedido y libera la reserva de stock."
+          }
+        },
+        {
+          "name": "Create tracking for order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/1/tracking/"
+            },
+            "description": "Crea un tracking de envío para el pedido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo_transporte\": \"road\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get tracking for order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/1/tracking/"
+            },
+            "description": "Obtiene el tracking del envío asociado al pedido."
+          }
+        },
+        {
+          "name": "Get order history (same as shopcart/history)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/history/"
+            },
+            "description": "Lista el historial de pedidos del usuario (alias de /api/shopcart/history)."
+          }
+        },
+        {
+          "name": "Get order history detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/1/history-detail/"
+            },
+            "description": "Obtiene el detalle de un pedido desde el historial."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stock",
+      "item": [
+        {
+          "name": "List stock products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_STOCK}}/api/stock/product"
+            },
+            "description": "Lista productos del backend de Stock."
+          }
+        },
+        {
+          "name": "Get stock product by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_STOCK}}/api/stock/product/1"
+            },
+            "description": "Obtiene un producto del backend de Stock por ID."
+          }
+        },
+        {
+          "name": "Create booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_STOCK}}/api/stock/booking"
+            },
+            "description": "Crea una reserva (booking) de stock.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": 1,\n  \"quantity\": 2,\n  \"expirationDate\": \"2025-12-31T23:59:59Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get booking by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_STOCK}}/api/stock/booking/1"
+            },
+            "description": "Obtiene un booking de stock por ID."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logistics",
+      "item": [
+        {
+          "name": "Create tracking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_LOGISTICA}}/api/logistics/tracking"
+            },
+            "description": "Crea un tracking logístico para una orden.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": 1,\n  \"address\": \"Calle Falsa 123, Resistencia, Chaco\",\n  \"products\": [\n    {\n      \"productId\": 1,\n      \"name\": \"Producto demo\",\n      \"quantity\": 2\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get tracking by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL_LOGISTICA}}/api/logistics/tracking/1"
+            },
+            "description": "Obtiene un tracking logístico por ID."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧪 PRUEBAS DE INTEGRACIÓN",
+      "description": "Tests para verificar que las APIs de Compras llaman correctamente a Stock y Logística",
+      "item": [
+        {
+          "name": "1. Get Token Keycloak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"TOKEN\", jsonData.access_token);",
+                  "",
+                  "pm.test(\"✅ Token obtenido correctamente\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(jsonData.access_token).to.be.a('string');",
+                  "});",
+                  "",
+                  "console.log(\"✅ Token guardado:\", jsonData.access_token.substring(0, 30) + \"...\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "grupo-04",
+                  "type": "text"
+                },
+                {
+                  "key": "client_secret",
+                  "value": "6be1bec1-9472-499f-ab37-883d78f57829",
+                  "type": "text"
+                },
+                {
+                  "key": "scope",
+                  "value": "productos:read",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8080/realms/ds-2025-realm/protocol/openid-connect/token",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "realms",
+                "ds-2025-realm",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "Obtiene token de autenticación OAuth2 para las siguientes requests"
+          }
+        },
+        {
+          "name": "2. Listar Productos Stock (obtener PRODUCT_ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test(\"✅ Stock API responde\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Verificar si los productos vienen en un array directo o dentro de 'data'",
+                  "var productos = Array.isArray(jsonData) ? jsonData : (jsonData.data || jsonData.results || []);",
+                  "",
+                  "pm.test(\"✅ Hay productos disponibles\", function () {",
+                  "    pm.expect(productos).to.be.an('array');",
+                  "    pm.expect(productos.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"✅ NO son datos mock\", function () {",
+                  "    pm.expect(productos[0].nombre).to.not.include(\"Mock\");",
+                  "});",
+                  "",
+                  "// Guardar ID del primer producto",
+                  "if (productos && productos.length > 0) {",
+                  "    pm.collectionVariables.set(\"PRODUCT_ID\", productos[0].id);",
+                  "    console.log(\"✅ Producto guardado:\", productos[0].id, \"-\", productos[0].nombre);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL_STOCK}}/api/v1/productos/?page=1&limit=10",
+              "host": [
+                "{{BASE_URL_STOCK}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "productos",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Obtiene productos reales de Stock API y guarda el primer ID.\n\nVERIFICACIÓN: docker-compose logs stock-backend | Select-String \"GET /api/v1/productos\""
+          }
+        },
+        {
+          "name": "3. Agregar al Carrito (valida con Stock API)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test(\"✅ Producto agregado al carrito\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(jsonData.items).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"✅ Item tiene info de Stock API\", function () {",
+                  "    pm.expect(jsonData.items[0].product).to.not.be.null;",
+                  "    pm.expect(jsonData.items[0].product.nombre).to.exist;",
+                  "});",
+                  "",
+                  "console.log(\"✅ Items en carrito:\", jsonData.items.length);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": {{PRODUCT_ID}},\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart/",
+              "host": [
+                "{{BASE_URL_COMPRAS}}"
+              ],
+              "path": [
+                "api",
+                "shopcart",
+                ""
+              ]
+            },
+            "description": "Tu API de Compras debe llamar a Stock para validar el producto.\n\nVERIFICACIÓN: docker-compose logs django | Select-String \"StockClient\"\nDeberías ver: [StockClient] GET http://nginx/stock/api/v1/productos/{{PRODUCT_ID}}"
+          }
+        },
+        {
+          "name": "4. Ver Carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test(\"✅ Carrito tiene items\", function () {",
+                  "    pm.expect(jsonData.items.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"✅ Items tienen info de producto (no null)\", function () {",
+                  "    jsonData.items.forEach(function(item) {",
+                  "        pm.expect(item.product).to.not.be.null;",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart/",
+              "host": [
+                "{{BASE_URL_COMPRAS}}"
+              ],
+              "path": [
+                "api",
+                "shopcart",
+                ""
+              ]
+            },
+            "description": "Ver carrito con datos de Stock"
+          }
+        },
+        {
+          "name": "5. Crear Pedido / Checkout (reserva stock)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "",
+                  "pm.test(\"✅ Pedido creado\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(jsonData.id).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test(\"✅ Tiene ID de reserva de Stock\", function () {",
+                  "    pm.expect(jsonData.reservaId || jsonData.stock_reserva_id).to.exist;",
+                  "});",
+                  "",
+                  "// Guardar ID del pedido para siguiente request",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set(\"PEDIDO_ID\", jsonData.id);",
+                  "    console.log(\"✅ Pedido creado con ID:\", jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direccion_envio\": {\n    \"nombre_receptor\": \"Juan Pérez\",\n    \"calle\": \"Av. 9 de Julio 123\",\n    \"ciudad\": \"Resistencia\",\n    \"provincia\": \"Chaco\",\n    \"codigo_postal\": \"3500\",\n    \"pais\": \"Argentina\",\n    \"telefono\": \"+54 362 4123456\"\n  },\n  \"tipo_transporte\": \"road\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/checkout/",
+              "host": [
+                "{{BASE_URL_COMPRAS}}"
+              ],
+              "path": [
+                "api",
+                "pedidos",
+                "checkout",
+                ""
+              ]
+            },
+            "description": "Tu API debe llamar a Stock API para reservar los productos.\n\nVERIFICACIÓN:\ndocker-compose logs django | Select-String \"reservar_stock\"\ndocker-compose logs stock-backend | Select-String \"POST /api/v1/reservas\""
+          }
+        },
+        {
+          "name": "6. Confirmar Pedido (crea envío en Logística)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"✅ Pedido confirmado o Logística no disponible\", function () {",
+                  "    // 200/201 = OK, 502 = Logística no disponible (normal)",
+                  "    pm.expect([200, 201, 502]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.test(\"✅ Tiene ID de envío de Logística\", function () {",
+                  "        pm.expect(jsonData.envioId || jsonData.shippingId).to.exist;",
+                  "    });",
+                  "    console.log(\"✅ Envío creado con ID:\", jsonData.envioId || jsonData.shippingId);",
+                  "} else if (pm.response.code === 502) {",
+                  "    console.log(\"⚠️  Logística API no disponible (502 Bad Gateway)\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/{{PEDIDO_ID}}/confirmar/",
+              "host": [
+                "{{BASE_URL_COMPRAS}}"
+              ],
+              "path": [
+                "api",
+                "pedidos",
+                "{{PEDIDO_ID}}",
+                "confirmar",
+                ""
+              ]
+            },
+            "description": "Tu API debe llamar a Logística para crear el envío.\n\nNOTA: 502 Bad Gateway es normal si Logística no está disponible.\n\nVERIFICACIÓN:\ndocker-compose logs django | Select-String \"LogisticaClient\"\ndocker-compose logs shipping-back | Select-String \"POST\""
+          }
+        },
+        {
+          "name": "7. Historial de Pedidos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "var pedidos = Array.isArray(jsonData) ? jsonData : jsonData.results;",
+                  "",
+                  "pm.test(\"✅ Tiene pedidos\", function () {",
+                  "    pm.expect(pedidos.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "console.log(\"📋 Total de pedidos:\", pedidos.length);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/pedidos/",
+              "host": [
+                "{{BASE_URL_COMPRAS}}"
+              ],
+              "path": [
+                "api",
+                "pedidos",
+                ""
+              ]
+            },
+            "description": "Lista de pedidos del usuario"
+          }
+        },
+        {
+          "name": "8. Limpiar Carrito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"✅ Carrito vaciado\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL_COMPRAS}}/api/shopcart/clear/",
+              "host": [
+                "{{BASE_URL_COMPRAS}}"
+              ],
+              "path": [
+                "api",
+                "shopcart",
+                "clear",
+                ""
+              ]
+            },
+            "description": "Vacía el carrito para nuevas pruebas"
+          }
+        }
+      ]
+    }
+  ]
+}
