@@ -43,7 +43,8 @@ urlpatterns = [
     path("login/", include("apps.modulos.login.urls")),
      path('pedidos/', include('apps.modulos.pedidos.urls')),
     # APIs internas (prefijo v1/)
-    path('api/', include('apps.apis.carritoApi.urls')),
+    path('compras/api/', include('apps.apis.carritoApi.urls')),
+    path('api/', include('apps.apis.carritoApi.urls')), 
     path('api/', include('apps.apis.productoApi.urls')),
     path('api/', include('apps.apis.pedidoApi.urls')),
     

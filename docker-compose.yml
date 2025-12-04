@@ -142,27 +142,21 @@ services:
       retries: 5
 
   # ==============================================================================
-  # 5. COMPRAS API (Grupo 10)
+  # 5. NUEVO COMPRAS API (Python/Django)
   # ==============================================================================
   compras-api:
+    # Ajusta la ruta a donde tengas el código del nuevo grupo
     build: ./api-compras
     container_name: compras-backend
-    environment:
-      - ConnectionStrings__DefaultConnection=Server=compras-db;Database=dbcomprasapi;User=compras_user;Password=compras_password
-      - Keycloak__Authority=http://keycloak:8080/realms/ds-2025-realm
-      - Keycloak__ValidIssuer=http://localhost:8080/realms/ds-2025-realm
-      - Keycloak__AdminBaseUrl=http://keycloak:8080
-      
-      - Keycloak__Audience=grupo-10
-      - Keycloak__ClientId=grupo-10
-      - Keycloak__ClientSecret=66ff9787-4fa5-46b3-b546-4ccbe604d233
-      - Keycloak__RequireHttpsMetadata=false
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:80 # Escucha en el puerto 80 interno
-      - ExternalApis__Logistica__BaseUrl=http://gateway:80/logistica/
-      - ExternalApis__Stock__BaseUrl=http://gateway:80/stock/
+    env_file:
+      - ./api-compras/.env
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py shell -c \"from django.contrib.sites.models import Site; Site.objects.update_or_create(id=1, defaults={'domain': 'localhost:5001', 'name': 'MiTienda'})\" &&
+             python manage.py runserver 0.0.0.0:8000"
     ports:
-      - "5001:80" # Exponemos en 5001 para no chocar con Logística (5002)
+      # Mapeamos el 5001 de tu PC al 8000 de Gunicorn/Django
+      - "5001:8000" 
     depends_on:
       compras-db:
         condition: service_healthy
@@ -171,44 +165,25 @@ services:
     networks:
       - app-network
 
-  compras-frontend:
-    build:
-      context: ./api-compras/Compras-Frontend/compras-frontend
-    container_name: compras_frontend
-    ports:
-      - "4200:80"
-    depends_on:
-      - compras-api
-      - keycloak
-    networks:
-      - app-network
-    environment:
-      - API_URL=http://localhost:5001/api
-      - KEYCLOAK_URL=http://localhost:8080
-      - KEYCLOAK_REALM=ds-2025-realm
-      - KEYCLOAK_CLIENT_ID=grupo-10
-
+  # ==============================================================================
+  # BASE DE DATOS COMPRAS (PostgreSQL)
+  # ==============================================================================
   compras-db:
-    image: mysql:8.0
-    container_name: compras-database
+    image: postgres:16.2
+    container_name: compras_postgres
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: dbcomprasapi
-      MYSQL_USER: compras_user
-      MYSQL_PASSWORD: compras_password
-    command: 
-      - --lower-case-table-names=1
-    ports:
-      - "3307:3306"
+      POSTGRES_DB: compras_db
+      POSTGRES_USER: compras_user
+      POSTGRES_PASSWORD: compras_password
     volumes:
-      - compras_db_data:/var/lib/mysql
-      - ./api-compras/Database/init-new.sql:/docker-entrypoint-initdb.d/init-new.sql
+      - compras_postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
+      test: [ "CMD-SHELL", "pg_isready -U compras_user -d compras_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   app-network:
@@ -217,5 +192,5 @@ networks:
 volumes:
   stock_db_data:
   logistica_db_data:
-  compras_db_data:
+  compras_postgres_data:
   keycloak_db_data:

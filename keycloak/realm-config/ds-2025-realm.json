@@ -1,7 +1,16 @@
 {
   "realm": "ds-2025-realm",
   "enabled": true,
+  "displayName": "DS 2025 Shop",
   "sslRequired": "none",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
   "defaultDefaultClientScopes": [
     "usuarios:read",
     "usuarios:write",
@@ -400,7 +409,7 @@
             "jsonType.label": "String",
             "userinfo.token.claim": "true",
             "id.token.claim": "true",
-            "access.token.claim": "true" 
+            "access.token.claim": "true"
           }
         },
         {
@@ -413,11 +422,11 @@
             "jsonType.label": "boolean",
             "userinfo.token.claim": "true",
             "id.token.claim": "true",
-            "access.token.claim": "true" 
+            "access.token.claim": "true"
           }
         }
       ]
-    }   
+    }
   ],
   "clients": [
     {
@@ -534,7 +543,9 @@
       "redirectUris": [
         "*"
       ],
-      "webOrigins": [ "http://localhost:3000" ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
       "protocol": "openid-connect",
@@ -614,8 +625,8 @@
       "serviceAccountsEnabled": true,
       "protocol": "openid-connect",
       "defaultClientScopes": [
-      "openid", 
-      "email"
+        "openid",
+        "email"
       ]
     },
     {

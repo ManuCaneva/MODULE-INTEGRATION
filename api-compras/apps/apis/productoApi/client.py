@@ -95,26 +95,34 @@ class ProductoAPIClient(BaseAPIClient):
         if limit is not None:
             params["limit"] = limit
         if search:
-            params["search"] = search
+            # CAMBIO: NestJS espera 'q', no 'search'
+            params["q"] = search
         if categoria:
-            params["categoria"] = categoria
+            # CAMBIO: NestJS espera 'categoriaId' (numérico) normalmente,
+            # pero si tu backend lo convierte, dejamos 'categoria'.
+            # Si falla, cambiar a 'categoriaId'
+            params["categoriaId"] = categoria 
         if marca:
             params["marca"] = marca
 
-        return self.get("/api/product/", params=params or None, expected_status=200)
+        # CAMBIO: Ruta corregida a /productos (sin /api/product/)
+        return self.get("/productos", params=params or None, expected_status=200)
 
     def obtener_producto(self, producto_id: int, *, parametros_extra: Optional[Dict[str, Any]] = None) -> Any:
         """Recupera el detalle de un producto específico."""
         params = parametros_extra if parametros_extra else None
-        return self.get(f"/productos/{producto_id}/", params=params, expected_status=200)
+        # CAMBIO: Quitamos la barra final para consistencia con NestJS
+        return self.get(f"/productos/{producto_id}", params=params, expected_status=200)
 
     def listar_categorias(self) -> Any:
         """Obtiene el listado de categorías disponibles desde la API de Stock."""
-        return self.get("/api/category/", expected_status=200)
+        # CAMBIO: Ruta corregida a /categorias (sin /api/category/)
+        return self.get("/categorias", expected_status=200)
 
 
 def obtener_cliente_productos(**kwargs: Any) -> ProductoAPIClient:
     """Helper para instanciar ``ProductoAPIClient`` usando la configuración del proyecto."""
+    # Usamos la variable correcta del settings que definimos en el .env
     base_url = getattr(settings, "PRODUCTOS_API_BASE_URL", "http://localhost:8000") 
     kwargs.setdefault("use_service_token", True)
     
