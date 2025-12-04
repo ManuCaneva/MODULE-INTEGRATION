@@ -384,7 +384,40 @@
           }
         }
       ]
-    }
+    },
+    {
+      "name": "email",
+      "description": "Email related information",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "config": {
+            "user.attribute": "email",
+            "claim.name": "email",
+            "jsonType.label": "String",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true" 
+          }
+        },
+        {
+          "name": "email verified",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "config": {
+            "user.attribute": "emailVerified",
+            "claim.name": "email_verified",
+            "jsonType.label": "boolean",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true" 
+          }
+        }
+      ]
+    }   
   ],
   "clients": [
     {
@@ -579,7 +612,11 @@
       ],
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
-      "protocol": "openid-connect"
+      "protocol": "openid-connect",
+      "defaultClientScopes": [
+      "openid", 
+      "email"
+      ]
     },
     {
       "clientId": "grupo-11",
